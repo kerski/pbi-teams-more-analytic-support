@@ -1,0 +1,935 @@
+{
+    "pbiEntries": [
+        {
+            "name": "reportLayout",
+            "pbixEntryPath": "Report/Layout",
+            "pbipEntryPath": "report.json",
+            "contentType": "json",
+            "codepage": 1200,
+            "rules": [
+                {
+                    "id": "REMOVE_CUSTOM_VISUALS_NOT_USED",
+                    "name": "Remove custom visuals which are not used in the report.",
+                    "description": "Returns an array of custom visual names to be removed if any. To disable this rule, mark it as disabled in the base rules file.",
+                    "logType": "error",
+                    "disabled": false,
+                    "path": "$",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "filter": [
+                                {
+                                    "map": [
+                                        {
+                                            "var": "customvis"
+                                        },
+                                        {
+                                            "if": [
+                                                {
+                                                    "==": [
+                                                        {
+                                                            "strcontains": [
+                                                                {
+                                                                    "tostring": [
+                                                                        {
+                                                                            "var": "pages"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "var": ""
+                                                                }
+                                                            ]
+                                                        },
+                                                        0
+                                                    ]
+                                                },
+                                                {
+                                                    "var": ""
+                                                },
+                                                ""
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "!!": [
+                                        {
+                                            "var": ""
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "customvis": "/publicCustomVisuals",
+                            "pages": "/sections"
+                        },
+                        []
+                    ]
+                },
+                {
+                    "id": "REDUCE_VISIBLE_VISUALS_ON_PAGE",
+                    "name": "Reduce the number of visible visuals on the page",
+                    "description": "Reports a test fail if the rule's maximum number of visible visuals on the page is exceeded. By default the base rules file specifies 20 as the maximum, set the paramMaxVisualsPerPage parameter to change this. To disable this rule, mark it as disabled in the base rules file.",
+                    "logType": "warning",
+                    "disabled": false,
+                    "forEachPath": "$.sections[*]",
+                    "forEachPathName": "$.name",
+                    "forEachPathDisplayName": "$.displayName",
+                    "path": "$.visualContainers[*].config",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "<=": [
+                                {
+                                    "count": [
+                                        {
+                                            "filter": [
+                                                {
+                                                    "var": "visuals"
+                                                },
+                                                {
+                                                    "and": [
+                                                        {
+                                                            "!=": [
+                                                                {
+                                                                    "var": "singleVisual.display.mode"
+                                                                },
+                                                                "hidden"
+                                                            ]
+                                                        },
+                                                        {
+                                                            "!": [
+                                                                {
+                                                                    "in": [
+                                                                        {
+                                                                            "var": "singleVisual.visualType"
+                                                                        },
+                                                                        [
+                                                                            "shape",
+                                                                            "slicer",
+                                                                            "actionButton",
+                                                                            "textbox"
+                                                                        ]
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": "paramMaxVisualsPerPage"
+                                }
+                            ]
+                        },
+                        {
+                            "visuals": ".",
+                            "paramMaxVisualsPerPage": 20
+                        },
+                        true
+                    ]
+                },
+                {
+                    "id": "REDUCE_OBJECTS_WITHIN_VISUALS",
+                    "name": "Reduce the number of objects within visuals",
+                    "description": "Reports a test fail if the rule's maximum number of objects within visuals on a page is exceeded. An object is a data field that is assigned to a visual. By default, the base rules file specifies 6 as the maximum objects within a visual. To disable this rule, mark it as disabled in the base rules file.",
+                    "logType": "warning",
+                    "disabled": false,
+                    "forEachPath": "$.sections[*]",
+                    "forEachPathName": "$.name",
+                    "forEachPathDisplayName": "$.displayName",
+                    "path": "$.visualContainers[*].config",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "map": [
+                                {
+                                    "filter": [
+                                        {
+                                            "var": "q"
+                                        },
+                                        {
+                                            ">": [
+                                                {
+                                                    "count": [
+                                                        {
+                                                            "var": "singleVisual.prototypeQuery.Select"
+                                                        }
+                                                    ]
+                                                },
+                                                12
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": "name"
+                                }
+                            ]
+                        },
+                        {
+                            "q": "."
+                        },
+                        []
+                    ]
+                },
+                {
+                    "id": "REDUCE_TOPN_FILTERING_VISUALS",
+                    "name": "Reduce usage of TopN filtering visuals by page",
+                    "description": "Reports a test fail if the rule's maximum number of visuals using TopN filtering on a the page is exceeded. By default the base rules file specifies 4 as the maximum objects within a visual, set the paramMaxTopNFilteringPerPage to change this. To disable this rule, mark it as disabled in the base rules file.",
+                    "logType": "error",
+                    "disabled": false,
+                    "forEachPath": "$.sections[*]",
+                    "forEachPathName": "$.name",
+                    "forEachPathDisplayName": "$.displayName",
+                    "path": "$.visualContainers[*].filters",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "<=": [
+                                {
+                                    "count": [
+                                        {
+                                            "filter": [
+                                                {
+                                                    "var": "f"
+                                                },
+                                                {
+                                                    "some": [
+                                                        {
+                                                            "var": ""
+                                                        },
+                                                        {
+                                                            "==": [
+                                                                {
+                                                                    "var": "type"
+                                                                },
+                                                                "TopN"
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": "paramMaxTopNFilteringPerPage"
+                                }
+                            ]
+                        },
+                        {
+                            "f": ".",
+                            "paramMaxTopNFilteringPerPage": 4
+                        },
+                        true
+                    ]
+                },
+                {
+                    "id": "REDUCE_ADVANCED_FILTERING_VISUALS",
+                    "name": "Reduce usage of Advanced filtering visuals by page",
+                    "description": "Reports a test fail if the rule's maximum number of visuals using Advanced filtering on a the page is exceeded. By default, the base rules file specifies 4 as the maximum objects within a visual, set the paramMaxAdvancedFilteringVisualsPerPage parameter value to change this. To disable this rule, mark it as disabled in the base rules file.",
+                    "logType": "warning",
+                    "disabled": false,
+                    "forEachPath": "$.sections[*]",
+                    "forEachPathName": "$.name",
+                    "forEachPathDisplayName": "$.displayName",
+                    "path": "$.visualContainers[*].filters",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "<=": [
+                                {
+                                    "count": [
+                                        {
+                                            "filter": [
+                                                {
+                                                    "var": "f"
+                                                },
+                                                {
+                                                    "some": [
+                                                        {
+                                                            "var": ""
+                                                        },
+                                                        {
+                                                            "==": [
+                                                                {
+                                                                    "var": "type"
+                                                                },
+                                                                "Advanced"
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": "paramMaxAdvancedFilteringVisualsPerPage"
+                                }
+                            ]
+                        },
+                        {
+                            "f": ".",
+                            "paramMaxAdvancedFilteringVisualsPerPage": 4
+                        },
+                        true
+                    ]
+                },
+                {
+                    "id": "REDUCE_NUMBER_OF_PAGES",
+                    "name": "Reduce number of pages per report",
+                    "description": "Reports a test fail if the rule's maximum number of pages per report is exceeded. By default, the base rules file specifies 10 as the maximum number of pages. Set the paramMaxNumberOfPagesPerReport parameter to change this. To disable this rule, mark it as disabled in the base rules file.",
+                    "logType": "warning",
+                    "disabled": false,
+                    "path": "$.sections",
+                    "pathErrorWhenNoMatch": true,
+                    "test": [
+                        {
+                            "<=": [
+                                {
+                                    "count": [
+                                        {
+                                            "var": "s"
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": "paramMaxNumberOfPagesPerReport"
+                                }
+                            ]
+                        },
+                        {
+                            "s": ".",
+                            "paramMaxNumberOfPagesPerReport": 10
+                        },
+                        true
+                    ]
+                },
+                {
+                    "id": "AVOID_SHOW_ITEMS_NO_DATA",
+                    "name": "Avoid setting ‘Show items with no data’ on columns",
+                    "description": "Returns an array of visual names which have the option ‘Show items with no data’ enabled on one or more columns. To disable this rule, mark it as disabled in the base rules file.",
+                    "logType": "warning",
+                    "disabled": false,
+                    "forEachPath": "$.sections[*]",
+                    "forEachPathName": "$.name",
+                    "forEachPathDisplayName": "$.displayName",
+                    "path": "$.visualContainers[*].config",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "map": [
+                                {
+                                    "filter": [
+                                        {
+                                            "map": [
+                                                {
+                                                    "var": "c"
+                                                },
+                                                [
+                                                    {
+                                                        "var": "name"
+                                                    },
+                                                    {
+                                                        "!!": [
+                                                            {
+                                                                "var": "singleVisual.showAllRoles"
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            ]
+                                        },
+                                        {
+                                            "var": 1
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": 0
+                                }
+                            ]
+                        },
+                        {
+                            "c": "."
+                        },
+                        []
+                    ]
+                },
+                {
+                    "id": "TOOLTIP_DRILLTHROUGH_HIDDEN",
+                    "name": "Tooltip and Drillthrough pages should be hidden",
+                    "description": "Reports a test fail if a page of type Tooltip or Drillthrough is visible. To disable this rule, mark it as disabled in the base rules file.",
+                    "logType": "error",
+                    "disabled": false,
+                    "forEachPath": "$.sections[*]",
+                    "forEachPathName": "$.name",
+                    "forEachPathDisplayName": "$.displayName",
+                    "path": "$.config",
+                    "pathErrorWhenNoMatch": true,
+                    "test": [
+                        {
+                            "none": [
+                                {
+                                    "var": "c"
+                                },
+                                {
+                                    "and": [
+                                        {
+                                            "in": [
+                                                {
+                                                    "var": "type"
+                                                },
+                                                [
+                                                    1,
+                                                    2
+                                                ]
+                                            ]
+                                        },
+                                        {
+                                            "!=": [
+                                                {
+                                                    "var": "visibility"
+                                                },
+                                                1
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "c": "."
+                        },
+                        true
+                    ]
+                },
+                {
+                    "id": "ENSURE_THEME_COLOURS",
+                    "name": "Ensure charts use theme colours",
+                    "description": "Check that charts (excluding textboxes) avoid custom colours and use theme colours instead. To disable this rule, mark it as disabled in the base rules file.",
+                    "disabled": true,
+                    "logType": "warning",
+                    "forEachPath": "$.sections[*]",
+                    "forEachPathName": "$.name",
+                    "forEachPathDisplayName": "$.displayName",
+                    "path": "$.visualContainers[*].config",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "map": [
+                                {
+                                    "filter": [
+                                        {
+                                            "var": "visualsConfigArray"
+                                        },
+                                        {
+                                            "and": [
+                                                {
+                                                    "!": [
+                                                        {
+                                                            "in": [
+                                                                {
+                                                                    "var": "singleVisual.visualType"
+                                                                },
+                                                                [
+                                                                    "textbox"
+                                                                ]
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "strcontains": [
+                                                        {
+                                                            "tostring": [
+                                                                {
+                                                                    "var": ""
+                                                                }
+                                                            ]
+                                                        },
+                                                        "#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})"
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": "name"
+                                }
+                            ]
+                        },
+                        {
+                            "visualsConfigArray": "."
+                        },
+                        []
+                    ]
+                },
+                {
+                    "id": "ENSURE_NO_VERTICAL_SCROLL",
+                    "name": "Ensure pages do not scroll vertically",
+                    "description": "Returns an array of visible page names with a height great than 720px. Modify the rule parameter value if a different maximum height value is required. To disable this rule, mark it as disabled in the base rules file.",
+                    "disabled": false,
+                    "logType": "warning",
+                    "path": "$.sections[*]",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "map": [
+                                {
+                                    "filter": [
+                                        {
+                                            "var": "pageArray"
+                                        },
+                                        {
+                                            "and": [
+                                                {
+                                                    ">": [
+                                                        {
+                                                            "var": "height"
+                                                        },
+                                                        {
+                                                            "var": "paramMaxAllowedPageHeight"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "!=": [
+                                                        {
+                                                            "drillvar": "config>visibility"
+                                                        },
+                                                        1
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": "displayName"
+                                }
+                            ]
+                        },
+                        {
+                            "pageArray": ".",
+                            "paramMaxAllowedPageHeight": 720
+                        },
+                        []
+                    ]
+                },
+                {
+                    "id": "ENSURE_NON_DEFAULT_TITLES",
+                    "name": "Ensure non-default title has been defined for all visuals",
+                    "description": "Better titles for each visual helps for accessibility and maintenance",
+                    "disabled": false,
+                    "logType": "error",
+                    "forEachPath": "$.sections[*]",
+                    "forEachPathName": "$.name",
+                    "forEachPathDisplayName": "$.displayName",
+                    "path": "$.visualContainers[*].config",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "map": [
+                                {
+                                    "filter": [
+                                        {
+                                            "var": "visualsConfigArray"
+                                        },
+                                        {
+                                            "and": [
+                                                {
+                                                    "!": [
+                                                        {
+                                                            "var": "singleVisualGroup"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "!": [
+                                                        {
+                                                            "in": [
+                                                                {
+                                                                    "var": "singleVisual.visualType"
+                                                                },
+                                                                [
+                                                                    "shape"
+                                                                ]
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "none": [
+                                                        {
+                                                            "var": "singleVisual.vcObjects.title"
+                                                        },
+                                                        {
+                                                            "and": [
+                                                                {
+                                                                    "or": [
+                                                                        {
+                                                                            "!!": [
+                                                                                {
+                                                                                    "var": "properties.text.expr.Aggregation"
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "!!": [
+                                                                                {
+                                                                                    "var": "properties.text.expr.Measure"
+                                                                                }
+                                                                            ]
+                                                                        },
+                                                                        {
+                                                                            "!=": [
+                                                                                {
+                                                                                    "var": "properties.text.expr.Literal.Value"
+                                                                                },
+                                                                                "''"
+                                                                            ]
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": "name"
+                                }
+                            ]
+                        },
+                        {
+                            "visualsConfigArray": "."
+                        },
+                        []
+                    ]
+                },
+                {
+                    "id": "ENSURE_ALTTEXT",
+                    "name": "Ensure alternativeText has been defined for all non-decorative visuals",
+                    "description": "Alt-text is required for screen readers",
+                    "disabled": false,
+                    "logType": "error",
+                    "forEachPath": "$.sections[*]",
+                    "forEachPathName": "$.name",
+                    "forEachPathDisplayName": "$.displayName",
+                    "path": "$.visualContainers[*].config",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "map": [
+                                {
+                                    "filter": [
+                                        {
+                                            "var": "visualsConfigArray"
+                                        },
+                                        {
+                                            "and": [
+                                                {
+                                                    "!": [
+                                                        {
+                                                            "var": "singleVisualGroup"
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    "!": [
+                                                        {
+                                                            "in": [
+                                                                {
+                                                                    "var": "singleVisual.visualType"
+                                                                },
+                                                                [
+                                                                    "shape"
+                                                                ]
+                                                            ]
+                                                        }
+                                                    ]
+                                                },
+                                                {
+                                                    ">=": [
+                                                        {
+                                                            "var": "layouts.0.position.tabOrder"
+                                                        },
+                                                        0
+                                                    ]
+                                                },
+                                                {
+                                                    "none": [
+                                                        {
+                                                            "var": "singleVisual.vcObjects.general"
+                                                        },
+                                                        {
+                                                            "or": [
+                                                                {
+                                                                    "!!": [
+                                                                        {
+                                                                            "var": "properties.altText.expr.Aggregation"
+                                                                        }
+                                                                    ]
+                                                                },
+                                                                {
+                                                                    "!=": [
+                                                                        {
+                                                                            "var": "properties.altText.expr.Literal.Value"
+                                                                        },
+                                                                        "''"
+                                                                    ]
+                                                                }
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": "name"
+                                }
+                            ]
+                        },
+                        {
+                            "visualsConfigArray": "."
+                        },
+                        []
+                    ]
+                },
+                {
+                    "id": "RULE_TEMPLATE",
+                    "name": "Rule Template",
+                    "description": "Rule template",
+                    "disabled": true,
+                    "logType": "warning",
+                    "path": "$",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        true,
+                        {},
+                        true
+                    ]
+                },
+                {
+                    "id": "FIRST_TAB_DEFAULT",
+                    "name": "First tab of the report should be the default tab",
+                    "disabled": false,
+                    "logType": "error",
+                    "description": "First tab of the report should be the default tab.",
+                    "path": "$.config",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "torecord": [
+                                "activePageIndex",
+                                {
+                                    "var": "activePageIndex"
+                                }
+                            ]
+                        },
+                        {
+                            "activePageIndex": "/activeSectionIndex"
+                        },
+                        {
+                            "activePageIndex": 0
+                        }
+                    ]
+                },
+                {
+                    "id": "NO_VISUAL_HEADERS_FOR_CERTAIN_VISUALS_1",
+                    "name": "No Visual headers for Slicers, Bookmark Navigator and Page Navigator",
+                    "description": "Visual headers for Slicers, Bookmark Navigator and Page Navigator should be disabled because it diminishes the user experience.",
+                    "disabled": false,
+                    "logType": "error",
+                    "forEachPath": "$.sections[*]",
+                    "forEachPathName": "$.name",
+                    "forEachPathDisplayName": "$.displayName",
+                    "path": "$.visualContainers[*].config",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "map": [
+                                {
+                                    "filter": [
+                                        {
+                                            "var": "visualsConfigArray"
+                                        },
+                                        {
+                                            "and": [
+                                                {
+                                                    "in": [
+                                                        {
+                                                            "var": "singleVisual.visualType"
+                                                        },
+                                                        [
+                                                            "bookmarkNavigator",
+                                                            "pageNavigator",
+                                                            "slicer"
+                                                        ]
+                                                    ]
+                                                },
+                                                {
+                                                    "or": [
+                                                        {
+                                                            "!=": [
+                                                                {
+                                                                    "var": [
+                                                                        "singleVisual.vcObjects.visualHeader.0.properties.show.expr.Literal.Value",
+                                                                        "true"
+                                                                    ]
+                                                                },
+                                                                "false"
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": "name"
+                                }
+                            ]
+                        },
+                        {
+                            "visualsConfigArray": "."
+                        },
+                        []
+                    ]
+                },
+                {
+                    "id": "NO_VISUAL_HEADERS_FOR_CERTAIN_VISUALS_2",
+                    "name": "No Visual headers for Text-Box, Shapes, and Buttons",
+                    "description": "Visual headers for Text-Box, Shapes, and Buttons should be disabled because it diminishes the user experience.",
+                    "disabled": false,
+                    "logType": "error",
+                    "forEachPath": "$.sections[*]",
+                    "forEachPathName": "$.name",
+                    "forEachPathDisplayName": "$.displayName",
+                    "path": "$.visualContainers[*].config",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "map": [
+                                {
+                                    "filter": [
+                                        {
+                                            "var": "visualsConfigArray"
+                                        },
+                                        {
+                                            "and": [
+                                                {
+                                                    "in": [
+                                                        {
+                                                            "var": "singleVisual.visualType"
+                                                        },
+                                                        [
+                                                            "actionButton",
+                                                            "shape",
+                                                            "slicer",
+                                                            "textbox"
+                                                        ]
+                                                    ]
+                                                },
+                                                {
+                                                    "or": [
+                                                        {
+                                                            "!=": [
+                                                                {
+                                                                    "var": [
+                                                                        "singleVisual.vcObjects.visualHeader.0.properties.show.expr.Literal.Value",
+                                                                        "false"
+                                                                    ]
+                                                                },
+                                                                "false"
+                                                            ]
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": "name"
+                                }
+                            ]
+                        },
+                        {
+                            "visualsConfigArray": "."
+                        },
+                        []
+                    ]
+                },
+                {
+                    "id": "SLICER_SEARCH_INPUT_SHOULD_BE_EMPTY",
+                    "name": "Slicer search input should be empty",
+                    "description": "Slicer search input should be empty to avoid inadvertent filtering.",
+                    "disabled": false,
+                    "logType": "error",
+                    "forEachPath": "$.sections[*]",
+                    "forEachPathName": "$.name",
+                    "forEachPathDisplayName": "$.displayName",
+                    "path": "$.visualContainers[*].config",
+                    "pathErrorWhenNoMatch": false,
+                    "test": [
+                        {
+                            "map": [
+                                {
+                                    "filter": [
+                                        {
+                                            "var": "visualsConfigArray"
+                                        },
+                                        {
+                                            "and": [
+                                                {
+                                                    "in": [
+                                                        {
+                                                            "var": "singleVisual.visualType"
+                                                        },
+                                                        [
+                                                            "slicer"
+                                                        ]
+                                                    ]
+                                                },
+                                                {
+                                                    "!!": [
+                                                        {
+                                                            "var": "singleVisual.objects.general.0.properties.selfFilter.filter.Where.0.Condition.Contains.Right.Literal.Value"
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "var": "name"
+                                }
+                            ]
+                        },
+                        {
+                            "visualsConfigArray": "."
+                        },
+                        []
+                    ]
+                }
+            ]
+        }
+    ]
+}
