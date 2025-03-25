@@ -33,7 +33,7 @@
             [hashtable]$Headers,
             [string]$Body,
             [string]$ContentType = "application/json",
-            [int]$MaxRetries = 1,
+            [int]$MaxRetries = 5,
             [int]$RetryDelay = 15
         )
         $attempt = 0
