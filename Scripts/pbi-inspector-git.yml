@@ -1,13 +1,15 @@
 trigger: none
 
 variables:
+  # Group containing environment variables for the pipeline
   - group: MYPBITMA
 
 resources:
   pipelines:
-    - pipeline: test-trigger  # Alias for the triggering pipeline
-      source: PBIP-CI    # Name of the pipeline being referenced
-      project: PBI-Test      # Name of the project where the pipeline resides
+    # Reference to another pipeline that triggers this pipeline
+    - pipeline: test-trigger
+      source: PBIP-CI
+      project: PBI-Test
       trigger:
         branches:
           include:
@@ -17,41 +19,45 @@ jobs:
 - job: TriggeredBuild
   workspace:
       clean: all
-  # Define the build agent's operating system
   pool:
-    vmImage: 'windows-latest'
+    vmImage: 'windows-latest' # Use the latest Windows image for the build agent
 
   steps:
   # Step 1: Checkout the current code with full Git history
   - checkout: self
     persistCredentials: true
-    fetchDepth: 0   
-  # Step 2: Download the artifact named 'CombinedReports' from 'test-trigger'
+    fetchDepth: 0
+
+  # Step 2: Download the artifact named 'CombinedReports' from the triggering pipeline
   - task: DownloadBuildArtifacts@1
     inputs:
       buildType: 'specific'
       project: 'PBI-Test' # Replace with your project name
-      pipeline: '$(UPSTREAM_PIPELINE_ID)' # Replace with the ID of the pipeline that publishes the artifact
+      pipeline: '$(UPSTREAM_PIPELINE_ID)' # ID of the pipeline that publishes the artifact
       runVersion: 'latest'
       artifactName: 'CombinedReports'
       targetPath: '$(Pipeline.Workspace)/CombinedReports'
       itemPattern: CombinedReports/**
 
-  # Step 3: Find each *.Report folder and call PBI Inspector CLI
+  # Step 3: Process each *.Report folder and call PBI Inspector CLI
   - task: PowerShell@2
     inputs:
       targetType: 'inline'
       script: |
+        # Load environment variables
         $gitPAT = ${env:GIT_PAT}
 
-        # Import the module
+        # Import the custom module for uploading files to Azure DevOps
         Import-Module -Name ".\Scripts\Custom\Add-FileToAzureDevOpsRepo.psm1" -Force 
 
+        # Define the path to the downloaded reports
         $combinedReportsPath = "$(Pipeline.Workspace)/a/CombinedReports"
-        Write-Host "##[debug]$combinedReportsPath"
+        Write-Host "##[debug]Combined Reports Path: $combinedReportsPath"
+
+        # Find all *.Report folders recursively
         $reportFolders = Get-ChildItem -Path $combinedReportsPath -Directory -Recurse | Where-Object { $_.Name -like "*.Report" }
 
-        # Get the current time in a specific format
+        # Get the current timestamp for unique file naming
         $currentTime = [DateTime]::UtcNow.ToString('yyyyMMdd_HHmmss')
         $baseUrl = "$(System.CollectionUri)" # Base URL for the organization
         $project = "$(System.TeamProject)"   # Current project name
@@ -59,7 +65,7 @@ jobs:
         foreach ($folder in $reportFolders) {
             Write-Host "##[debug]Processing folder: $($folder.FullName)"
             
-            # Retrieve the workspace name from the folder path
+            # Extract metadata from the folder path
             # Assumes the format in workspace~repositoryId~branchName~commitId
             $tempSplit = ($folder.FullName -split "~")
             $workspaceName = $tempSplit[$tempSplit.Length - 4]
@@ -67,41 +73,43 @@ jobs:
             $branchName = $tempSplit[$tempSplit.Length - 2]
             $commitId = ($tempSplit[$tempSplit.Length - 1] -split "\\")[0]
 
-            Write-Host "##[debug]Workspace Name: $tempsplit"
+            Write-Host "##[debug]Workspace Name: $workspaceName"
             Write-Host "##[debug]Repository ID: $repositoryId"
             Write-Host "##[debug]Branch Name: $branchName"
             Write-Host "##[debug]Commit ID: $commitId"
             
-            if(!(Test-Path -LiteralPath "$($folder.FullName)/.platform")){
+            # Ensure the .platform file exists in the folder
+            if (!(Test-Path -LiteralPath "$($folder.FullName)/.platform")) {
                 Write-Error "Could not locate .platform file in $($folder.FullName)"
                 exit 1
             }
 
-            # Get platform content to retrieve report name
+            # Read metadata from the .platform file
             $platformContent = Get-Content -LiteralPath "$($folder.FullName)/.platform" -Encoding utf8 | ConvertFrom-Json            
             $reportName = $platformContent.metadata.displayName     
             $logicalId = $platformContent.config.logicalId                   
             
+            # Define the output path for PBI Inspector results
             $outputFilePath = ".\PBIInspectorTests\$($repositoryId)\$($branchName)\$($logicalId)~$($commitId)~$($currentTime)"
-
             Write-Host "##[debug]Output file path: $outputFilePath"
-            # Run PBIXInspectorCLI
+
+            # Run PBIXInspectorCLI to analyze the report
             .\PBI-Inspector\PBIXInspectorCLI -pbipreport $folder.FullName `
                                              -rules .\Rules\pbi-inspector-custom-rules.json `
                                              -formats "JSON" `
                                              -verbose true `
                                              -output $outputFilePath
 
-            # Retrieves files saved
+            # Retrieve all files generated by PBIXInspectorCLI
             $filesToSaveToGit = Get-ChildItem -Path $outputFilePath -Recurse -File
 
-            foreach($tempFile in $filesToSaveToGit){
-              Write-Host "##[debug] Saving $($tempFile.Name) to Git"
+            foreach ($tempFile in $filesToSaveToGit) {
+              Write-Host "##[debug]Saving $($tempFile.Name) to Git"
 
-              # Get Content
+              # Read the content of the file
               $tempContent = Get-Content -Raw $tempFile.FullName
               
-              
+              # Upload the file to Azure DevOps Git repository
               Add-FileToAzureDevOpsRepo -BaseUrl $baseUrl `
                 -ProjectName $project `
                 -RepositoryName "pbi-test-results" `
@@ -111,16 +119,18 @@ jobs:
                 -Content $tempContent `
                 -CommitMessage "PBI Inspector results saved to $($tempFile.Name)"                                                                                       
 
-              # Setup record file
+              # Create a record file with metadata
               $recordFile = "$($repositoryId)~$($branchName)~$($logicalId)~$($commitId)~$($currentTime).csv"
               $rows = @()
               $header = @('"repository_id"','"branch_name"','"logical_id"','"commit_id"','"artifact_name"','"artifact_type"')
+              $rows += $header
               $rows += (
                         '"{0}","{1}","{2}","{3}","{4}","{5}"' -f `
-                        $repositoryId, $branchName, $logicalId,$commitId,$reportName,"Report"
+                        $repositoryId, $branchName, $logicalId, $commitId, $reportName, "Report"
                         )            
               $csvContent = $rows -join "`n"
 
+              # Upload the record file to Azure DevOps Git repository
               Add-FileToAzureDevOpsRepo -BaseUrl $baseUrl `
               -ProjectName $project `
               -RepositoryName "pbi-test-results" `
@@ -130,7 +140,7 @@ jobs:
               -Content $csvContent `
               -CommitMessage "Artifacts results saved to $recordFile"
 
-            }# end foreach
+            } # End foreach
         }
     displayName: 'Run PBI Inspector CLI on each *.Report folder and save test results'
     env:
