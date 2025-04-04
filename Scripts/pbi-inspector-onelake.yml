@@ -1,0 +1,189 @@
+trigger: none
+
+variables:
+  # Group containing environment variables for the pipeline
+  - group: MYPBITMA-ONELAKE
+
+resources:
+  pipelines:
+    # Reference to another pipeline that triggers this pipeline
+    - pipeline: test-trigger
+      source: PBIP-CI
+      project: PBI-Test
+      trigger:
+        branches:
+          include:
+            - development
+
+jobs:
+- job: TriggeredBuild
+  workspace:
+      clean: all
+  pool:
+    vmImage: 'windows-latest' # Use the latest Windows image for the build agent
+
+  steps:
+  # Step 1: Checkout the current code with full Git history
+  - checkout: self
+    persistCredentials: true
+    fetchDepth: 0
+
+  # Step 2: Download the artifact named 'CombinedReports' from the triggering pipeline
+  - task: DownloadBuildArtifacts@1
+    inputs:
+      buildType: 'specific'
+      project: 'PBI-Test' # Replace with your project name
+      pipeline: '$(UPSTREAM_PIPELINE_ID)' # ID of the pipeline that publishes the artifact
+      runVersion: 'latest'
+      artifactName: 'CombinedReports'
+      targetPath: '$(Pipeline.Workspace)/CombinedReports'
+      itemPattern: CombinedReports/**
+
+  # Step 3: Process each *.Report folder and call PBI Inspector CLI
+  - task: PowerShell@2
+    inputs:
+      pwsh: true
+      targetType: 'inline'
+      script: |
+        # Load environment variables
+        $clientId = "${env:CLIENT_ID}"
+        $clientSecret = ${env:CLIENT_SECRET}
+        $tenantId = "${env:TENANT_ID}"
+        $oneLakeEndPoint = ${env:ONELAKE_ENDPOINT}
+
+        # Set AzCopy Connection
+        $env:AZCOPY_SPA_CLIENT_SECRET = $clientSecret
+
+        $onelakeUri = New-Object System.Uri($oneLakeEndPoint)
+        $onelakeDomain = $onelakeUri.Host        
+
+        $loginResult = azcopy login --service-principal `
+                                    --application-id $clientId `
+                                    --tenant-id $tenantId `
+                                    --trusted-microsoft-suffixes="$($onelakeDomain)" `
+                                    --output-type json | ConvertFrom-Json
+
+        # Check if login was successful
+        $checkResult = $loginResult | Where-Object {$_.MessageContent -eq "INFO: SPN Auth via secret succeeded."}
+
+        if(!$checkResult) {
+            Write-Host "##[error] Failed to login to azcopy"
+            exit 1
+        }   
+
+        # Define the path to the downloaded reports
+        $combinedReportsPath = "$(Pipeline.Workspace)/a/CombinedReports"
+        Write-Host "##[debug]Combined Reports Path: $combinedReportsPath"
+
+        # Find all *.Report folders recursively
+        $reportFolders = Get-ChildItem -Path $combinedReportsPath -Directory -Recurse | Where-Object { $_.Name -like "*.Report" }
+
+        # Get the current timestamp for unique file naming
+        $currentTime = [DateTime]::UtcNow.ToString('yyyyMMdd_HHmmss')
+
+        foreach ($folder in $reportFolders) {
+            Write-Host "##[debug]Processing folder: $($folder.FullName)"
+            
+            # Extract metadata from the folder path
+            $tempSplit = ($folder.FullName -split "~")
+            $workspaceName = $tempSplit[$tempSplit.Length - 4]
+            $repositoryId = $tempSplit[$tempSplit.Length - 3]
+            $branchName = $tempSplit[$tempSplit.Length - 2]
+            $commitId = ($tempSplit[$tempSplit.Length - 1] -split "\\")[0]
+
+            Write-Host "##[debug]Workspace Name: $workspaceName"
+            Write-Host "##[debug]Repository ID: $repositoryId"
+            Write-Host "##[debug]Branch Name: $branchName"
+            Write-Host "##[debug]Commit ID: $commitId"
+            
+            # Ensure the .platform file exists in the folder
+            if (!(Test-Path -LiteralPath "$($folder.FullName)/.platform")) {
+                Write-Error "Could not locate .platform file in $($folder.FullName)"
+                exit 1
+            }
+
+            try {
+                # Read metadata from the .platform file
+                $platformContent = Get-Content -LiteralPath "$($folder.FullName)/.platform" -Encoding utf8 | ConvertFrom-Json            
+                $reportName = $platformContent.metadata.displayName     
+                $logicalId = $platformContent.config.logicalId                   
+                
+                # Define the output path for PBI Inspector results
+                $outputFilePath = ".\PBIInspectorTests\$($repositoryId)\$($branchName)\$($logicalId)~$($commitId)~$($currentTime)"
+                Write-Host "##[debug]Output file path: $outputFilePath"
+
+                # Run PBIXInspectorCLI to analyze the report
+                .\PBI-Inspector\PBIXInspectorCLI -pbipreport $folder.FullName `
+                                                 -rules .\Rules\pbi-inspector-custom-rules.json `
+                                                 -formats "JSON" `
+                                                 -verbose true `
+                                                 -output $outputFilePath
+
+                # Retrieve all files generated by PBIXInspectorCLI
+                $filesToSaveToGit = Get-ChildItem -Path $outputFilePath -Recurse -File
+
+                foreach ($tempFile in $filesToSaveToGit) {
+                  Write-Host "##[debug]Saving $($tempFile.Name) to SharePoint"
+
+
+                  Write-Host "##[debug]Copying file to lakehouse at ${env:ONELAKE_ENDPOINT}."
+                  # Copy file to lakehouse
+                  $copyResults = azcopy copy $tempFile.FullName "${env:ONELAKE_ENDPOINT}" --overwrite=true `
+                                                            --blob-type=Detect `
+                                                            --check-length=true `
+                                                            --put-md5 `
+                                                            --trusted-microsoft-suffixes="$($onelakeDomain)" `
+                                                            --output-type json | ConvertFrom-Json
+                  # Check if copy was successful
+                  $checkCopyResults = $copyResults | Where-Object {$_.MessageType -eq "EndOfJob"}
+
+                  if(!$checkCopyResults) {
+                      Write-Host "##[error]Failed to copy file to lakehouse"
+                  }else{
+                      Write-Host "##[debug]Successfully copied file to lakehouse"
+                  }                                       
+
+                  # Create a record file with metadata
+                  $recordFile = "$($repositoryId)~$($branchName)~$($logicalId)~$($commitId)~$($currentTime).csv"
+                  $rows = @()
+                  $rows += (
+                            '"{0}","{1}","{2}","{3}","{4}","{5}"' -f `
+                            "repository_id","branch_name","logical_id","commit_id","artifact_name","artifact_type"
+                            )  
+                  $rows += (
+                            '"{0}","{1}","{2}","{3}","{4}","{5}"' -f `
+                            $repositoryId, $branchName, $logicalId, $commitId, $reportName, "Report"
+                            )            
+                  $csvContent = $rows -join "`n"
+
+                  # Save the record file
+                  $csvContent | Out-File -FilePath $recordFile -Encoding utf8
+
+                  $recordFilePath = Resolve-Path -Path $recordFile -ErrorAction Stop
+
+                  # Upload the record file to SharePoint
+                  Write-Host "##[debug]Copying file to lakehouse at ${env:ONELAKE_ENDPOINT}."
+                  # Copy file to lakehouse
+                  $copyResults = azcopy copy $recordFilePath "${env:ONELAKE_ENDPOINT}" --overwrite=true `
+                                                            --blob-type=Detect `
+                                                            --check-length=true `
+                                                            --put-md5 `
+                                                            --trusted-microsoft-suffixes="$($onelakeDomain)" `
+                                                            --output-type json | ConvertFrom-Json              
+                  # Check if copy was successful
+                  $checkCopyResults = $copyResults | Where-Object {$_.MessageType -eq "EndOfJob"}
+
+                  if(!$checkCopyResults) {
+                      Write-Host "##[error]Failed to copy file to lakehouse"
+                  }else{
+                      Write-Host "##[debug]Successfully copied file to lakehouse"
+                  }     
+                }
+            } catch {
+                Write-Error "An error occurred: $_"
+                throw "An error occurred: $_"
+            }
+        }
+    displayName: 'Run PBI Inspector CLI on each *.Report folder and save test results'
+    env:
+      CLIENT_SECRET: $(CLIENT_SECRET)
