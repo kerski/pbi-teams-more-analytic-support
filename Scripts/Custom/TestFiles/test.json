@@ -1,0 +1,42 @@
+[
+    {
+        "ID": "use-relative-path-with-web-contents",
+        "Name": "Use RelativePath or Query with Parameterized URL in Web.Contents",
+        "Category": "Potential Issue",
+        "Description": "Hard Coded URL in Web.Contents() without use of Relative Path or Query can increase the number of connections. Use Relative Path or Query in conjunction with Parameterized URL to avoid this issue.",
+        "References": [
+            {
+                "Description": "Using the RelativePath and Query Options with Web.Contents() in Power Query and Power BI M Code",
+                "Link": "https://blog.crossjoin.co.uk/2016/08/16/using-the-relativepath-and-query-options-with-web-contents-in-power-query-and-power-bi-m-code/"
+            }
+        ],
+        "Severity": 3,
+        "ErrorInformation": {
+            "errorLocation": {
+                "positionStart": "1",
+                "positionEnd": "2"
+            },
+            "filePath": null
+        }
+    },
+    {
+        "ID": "use-relative-path-with-web-contents2",
+        "Name": "Use RelativePath or Query with Parameterized URL in Web.Contents",
+        "Category": "Potential Issue",
+        "Description": "Hard Coded URL in Web.Contents() without use of Relative Path or Query can increase the number of connections. Use Relative Path or Query in conjunction with Parameterized URL to avoid this issue.",
+        "References": [
+            {
+                "Description": "Using the RelativePath and Query Options with Web.Contents() in Power Query and Power BI M Code",
+                "Link": "https://blog.crossjoin.co.uk/2016/08/16/using-the-relativepath-and-query-options-with-web-contents-in-power-query-and-power-bi-m-code/"
+            }
+        ],
+        "Severity": 3,
+        "ErrorInformation": {
+            "errorLocation": {
+                "positionStart": "1",
+                "positionEnd": "2"
+            },
+            "filePath": null
+        }
+    }    
+]

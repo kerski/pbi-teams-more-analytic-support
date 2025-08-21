@@ -1,0 +1,70 @@
+DEFINE
+
+	// *** STEP 1 - Identify Table Name
+	VAR _TableName = "AlignmentDim"
+
+	// Use function introduce in late 2024
+	VAR _InitMeasures = SELECTCOLUMNS(
+		INFO.VIEW.MEASURES(),
+		"Table", [Table],
+		"Column", [Name],
+		"Type", [DataType],
+		"Data Category", "",
+		"Format String", SUBSTITUTE([FormatStringDefinition],"""","")
+	)
+
+	// Create preliminary schema table
+	VAR _InitiColumns = SELECTCOLUMNS(
+		FILTER(
+			INFO.VIEW.COLUMNS(),
+			[DataCategory] <> "RowNumber"
+		),
+		"Table", [Table],
+		"Column", [Name],
+		"Type", [DataType],
+		"Data Category", [DataCategory],
+		"Format String", [FormatString]
+	)
+
+	VAR _Schema = UNION(
+		_InitMeasures,
+		_InitiColumns
+	)
+
+	//// MODEL SPECIFIC ////
+
+	// Filter the Schema by the table name identfied
+	VAR _TableCheck = FILTER(
+		_Schema,
+		[Table] = _TableName
+	)
+
+	// Generate the DAX that creates DAX
+	VAR _DataTableOutput = SUMMARIZE(
+		_TableCheck,
+		[Column],
+		[Data Category],
+		[Format String],
+		[Type],
+		"X", "{""" & [Column] & """,""" & [Type] & """," & IF(
+			ISBLANK([Data Category]),
+			"BLANK()",
+			"""" & [Data Category] & """"
+		) & "," & IF(
+			ISBLANK([Format String]),
+			"BLANK()",
+			"""" & [Format String] & """"
+		) & "}"
+	)
+
+	VAR _Results = CONCATENATEX(
+		_DataTableOutput,
+		[X],
+		","
+	)
+
+// *** STEP 2 - Run Query and Copy Entire Table to Schema.Tests
+EVALUATE
+	ROW(
+		"VAR _z=", "DATATABLE(""Column"",STRING,""Type"",STRING,""Data Category"",STRING,""Format String"",STRING,{" & _Results & "})"
+	)

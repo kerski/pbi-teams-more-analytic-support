@@ -1,0 +1,37 @@
+model Model
+	culture: en-US
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	sourceQueryCulture: en-US
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+queryGroup Dimensions
+
+	annotation PBI_QueryGroupOrder = 0
+
+queryGroup Fact
+
+	annotation PBI_QueryGroupOrder = 1
+
+queryGroup Parameters
+
+	annotation PBI_QueryGroupOrder = 2
+
+annotation PBIDesktopVersion = 2.143.878.0 (25.05)+b20aa3b866ec1b70879135a4e60e4b1301c75b21
+
+annotation PBI_QueryOrder = ["MarvelFact","DateDim","EyeColorDim","AlignmentDim","DateDimBlank","MarvelSource","WebURL","DataTypes"]
+
+annotation __PBI_TimeIntelligenceEnabled = 0
+
+annotation PBI_ProTooling = ["DevMode","DaxQueryView_Desktop","TMDL-Extension"]
+
+ref table MarvelFact
+ref table DateDim
+ref table EyeColorDim
+ref table MarvelSource
+ref table AlignmentDim
+ref table DataTypes
+
+ref cultureInfo en-US
+

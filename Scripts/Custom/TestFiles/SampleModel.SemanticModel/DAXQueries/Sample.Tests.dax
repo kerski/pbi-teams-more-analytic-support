@@ -1,0 +1,24 @@
+DEFINE
+	
+/*Run Tests*/
+VAR _Tests =               
+UNION (
+    ROW (
+        "TestName", "Column: Test 1",
+        "ExpectedValue", 1,
+        "ActualValue", 1
+    ),
+    ROW (
+        "TestName", "Measure: Test 2",
+        "ExpectedValue", 2,
+        "ActualValue", 2
+    ),
+	    ROW (
+        "TestName", "Table: Test 3",
+        "ExpectedValue", 3,
+        "ActualValue", 3
+    )
+)
+
+/*Output Pass/Fail*/
+EVALUATE ADDCOLUMNS(_Tests,"Passed",[ExpectedValue] = [ActualValue])

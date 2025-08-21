@@ -1,0 +1,62 @@
+table Severity
+	lineageTag: f6841e3c-6f2a-41f2-85ca-0ba3c7543c75
+
+	column SeverityId
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		isAvailableInMdx: false
+		lineageTag: b8e952b4-8829-465d-9532-51785d8262cc
+		summarizeBy: none
+		sourceColumn: SeverityId
+
+		annotation SummarizationSetBy = Automatic
+
+	column State
+		dataType: string
+		lineageTag: c9b9c3cf-18ba-4de7-abe3-45a86160b445
+		summarizeBy: none
+		sourceColumn: State
+		sortByColumn: Order
+
+		changedProperty = SortByColumn
+
+		annotation SummarizationSetBy = Automatic
+
+	column Order
+		dataType: int64
+		formatString: 0
+		lineageTag: 2cfa197e-c73d-4701-b3f8-8dd07c5377f0
+		summarizeBy: none
+		sourceColumn: Order
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Severity = m
+		mode: import
+		source =
+				let
+				    Source = #table(
+				        {"SeverityId", "State","Order"},
+				        {
+				            {1, "Informational",3},
+				            {2, "Warning",2},
+				            {3, "Error",1}
+				        }
+				    ),
+				    #"Changed Type" = Table.TransformColumnTypes(
+				        Source,
+				        {
+				            {"SeverityId", Int64.Type},
+				            {"State", type text},
+				            {"Order", Int32.Type}
+				        }
+				    )
+				in
+				    #"Changed Type"
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

@@ -1,0 +1,51 @@
+table EyeColorDim
+	lineageTag: 037f7bba-4826-403f-b77b-fb781709cca3
+
+	column EyeID
+		dataType: int64
+		formatString: 0
+		lineageTag: 997fc90c-3966-4e04-9b0a-4890e6bb2aa2
+		summarizeBy: none
+		sourceColumn: EyeID
+
+		annotation SummarizationSetBy = Automatic
+
+	column EyeKey
+		dataType: string
+		lineageTag: 55a30476-3ae6-4781-999b-ef1816fb31d9
+		summarizeBy: none
+		sourceColumn: EyeKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Eye Color'
+		dataType: string
+		lineageTag: ebbc7a88-ab18-435c-9c89-435151873c5c
+		summarizeBy: none
+		sourceColumn: Eye Color
+
+		annotation SummarizationSetBy = Automatic
+
+	partition EyeColorDim-9e3c8afc-012c-44ec-9c61-96893c06fa7b = m
+		mode: import
+		queryGroup: Dimensions
+		source =
+				let
+				    Source = MarvelSource,
+				    #"Removed Other Columns" = Table.SelectColumns(Source,{"EYE"}),
+				    #"Duplicated Column" = Table.DuplicateColumn(#"Removed Other Columns", "EYE", "EYE - Copy"),
+				    #"Removed Duplicates" = Table.Distinct(#"Duplicated Column", {"EYE"}),
+				    #"Renamed Columns" = Table.RenameColumns(#"Removed Duplicates",{{"EYE", "EyeKey"}}),
+				    #"Split Column by Delimiter" = Table.SplitColumn(#"Renamed Columns", "EYE - Copy", Splitter.SplitTextByDelimiter(" ", QuoteStyle.Csv), {"EYE - Copy.1", "EYE - Copy.2"}),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Split Column by Delimiter",{{"EYE - Copy.1", type text}, {"EYE - Copy.2", type text}}),
+				    #"Removed Columns" = Table.RemoveColumns(#"Changed Type",{"EYE - Copy.2"}),
+				    #"Sorted Rows" = Table.Sort(#"Removed Columns",{{"EYE - Copy.1", Order.Ascending}}),
+				    #"Added Index" = Table.AddIndexColumn(#"Sorted Rows", "Index", 0, 1, Int64.Type),
+				    #"Reordered Columns" = Table.ReorderColumns(#"Added Index",{"Index", "EyeKey", "EYE - Copy.1"}),
+				    #"Renamed Columns1" = Table.RenameColumns(#"Reordered Columns",{{"Index", "EyeID"}, {"EYE - Copy.1", "Eye Color"}}),
+				    #"Replaced Value" = Table.ReplaceValue(#"Renamed Columns1","","Not Available",Replacer.ReplaceValue,{"Eye Color"})
+				in
+				    #"Replaced Value"
+
+	annotation PBI_ResultType = Table
+

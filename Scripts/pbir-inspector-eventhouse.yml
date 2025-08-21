@@ -1,0 +1,287 @@
+# =============================================================================
+# Pipeline-Triggered: PBIR Inspector Analysis Pipeline
+# =============================================================================
+# This pipeline is triggered by the PBIP-CI pipeline and runs PBIR Inspector
+# analysis on Power BI reports, then ingests results into Eventhouse.
+#
+# Prerequisites:
+# - PBIR Inspector CLI executable in ./PBIR-Inspector/PBIRInspectorCLI
+# - Custom rules file in ./Rules/pbi-inspector-custom-rules.json
+# - Service Principal with access to Eventhouse/Kusto cluster
+# - Variable group 'MYPBITMA-EVENTHOUSE' with required secrets
+# - ADO_TOKEN with repository read permissions for REST API calls
+# =============================================================================
+
+# Trigger Configuration
+# Only triggered by other pipelines, not by code changes
+trigger: none
+
+# Pipeline Variables
+# Reference to variable group containing sensitive environment variables
+variables:
+  - group: MYPBITMA-EVENTHOUSE  # Contains: CLIENT_ID, CLIENT_SECRET, TENANT_ID, CLUSTER_URL, DATABASE, ADO_TOKEN
+
+# =============================================================================
+# PIPELINE RESOURCES
+# =============================================================================
+# Define dependency on upstream pipeline that provides artifacts
+resources:
+  pipelines:
+    - pipeline: test-trigger      # Internal reference name
+      source: PBIP-CI            # Source pipeline name
+      project: PBI-Test          # Source project name
+      trigger:                   # Trigger conditions
+        branches:
+          include:
+            - '*'                # Trigger on any branch
+
+# =============================================================================
+# JOBS SECTION
+# =============================================================================
+jobs:
+  - job: TriggeredBuild
+    workspace:
+      clean: all                 # Clean workspace before starting
+    pool:
+      vmImage: 'ubuntu-latest'   # Use Linux agent for cross-platform compatibility
+
+    steps:
+      # =============================================================================
+      # STEP 1: SOURCE CODE CHECKOUT
+      # =============================================================================
+      - checkout: self
+        persistCredentials: true  # Keep credentials for potential git operations
+        fetchDepth: 0            # Fetch full git history
+
+      # =============================================================================
+      # STEP 2: LINUX PERMISSIONS SETUP
+      # =============================================================================
+      # Make PBIR Inspector CLI executable on Linux environment
+      - task: Bash@3
+        inputs:
+          targetType: 'inline'
+          script: |
+            # Make the PBIR Inspector CLI executable
+            chmod +x ./PBIR-Inspector/PBIRInspectorCLI
+            
+            # Verify the file exists and is executable
+            if [ -f "./PBIR-Inspector/PBIRInspectorCLI" ]; then
+              echo "PBIR Inspector CLI found and made executable"
+              ls -la ./PBIR-Inspector/PBIRInspectorCLI
+            else
+              echo "ERROR: PBIR Inspector CLI not found at ./PBIR-Inspector/PBIRInspectorCLI"
+              exit 1
+            fi
+        displayName: 'Set executable permissions for PBIR Inspector CLI'
+
+      # =============================================================================
+      # STEP 3: DOWNLOAD ARTIFACTS FROM UPSTREAM PIPELINE
+      # =============================================================================
+      # Download Power BI reports from the triggering pipeline
+      - task: DownloadBuildArtifacts@1
+        inputs:
+          buildType: 'specific'                           # Download from specific pipeline
+          project: 'PBI-Test'                            # Source project name
+          pipeline: '$(UPSTREAM_PIPELINE_ID)'            # ID of the pipeline that publishes artifacts
+          runVersion: 'latest'                           # Use latest successful run
+          artifactName: 'CombinedReports'                # Name of artifact to download
+          targetPath: '$(Pipeline.Workspace)/CombinedReports'  # Local download path
+          itemPattern: CombinedReports/**                # Pattern to match artifact contents
+
+      # =============================================================================
+      # STEP 4: MAIN PBIR INSPECTOR ANALYSIS AND INGESTION LOGIC
+      # =============================================================================
+      - task: PowerShell@2
+        inputs:
+          targetType: 'inline'
+          pwsh: true               # Use PowerShell Core for cross-platform compatibility
+          script: |
+            # =============================================================================
+            # ENVIRONMENT VARIABLES SETUP
+            # =============================================================================
+            # Load authentication and connection details from pipeline variables
+            $clientId = "${env:CLIENT_ID}"              # Service Principal Client ID
+            $clientSecret = "${env:CLIENT_SECRET}"      # Service Principal Secret
+            $tenantId = "${env:TENANT_ID}"              # Azure AD Tenant ID
+            $clusterUrl = "${env:CLUSTER_URL}"          # Eventhouse cluster endpoint URL
+            $database = "${env:DATABASE}"               # Eventhouse database name
+            $pbirInspectorTable = "pbir_inspector_bronze"  # Target table name
+
+            # =============================================================================
+            # MODULE IMPORTS
+            # =============================================================================
+            # Import custom module for Eventhouse/Kusto ingestion
+            Import-Module -Name "./Scripts/Custom/Invoke-FabricJsonIngestion.psm1" -Force 
+
+            # =============================================================================
+            # ARTIFACT PATH SETUP
+            # =============================================================================
+            # Define the path to downloaded Power BI reports
+            $combinedReportsPath = "$(Pipeline.Workspace)/a/CombinedReports"
+            Write-Host "##[debug]Combined Reports Path: $combinedReportsPath"
+
+            # Find all *.Report folders recursively in the downloaded artifacts
+            $reportFolders = Get-ChildItem -Path $combinedReportsPath -Directory -Recurse | Where-Object { $_.Name -like "*.Report" }
+
+            # Get current timestamp for unique file naming and tracking
+            $currentTime = [DateTime]::UtcNow.ToString('yyyyMMdd_HHmmss')
+
+            # =============================================================================
+            # PROCESS EACH POWER BI REPORT
+            # =============================================================================
+            foreach ($folder in $reportFolders) {
+                Write-Host "##[debug]Processing folder: $($folder.FullName)"
+            
+                # =============================================================================
+                # EXTRACT METADATA FROM FOLDER PATH
+                # =============================================================================
+                # Parse folder path to extract workspace, repository, branch, and commit info
+                # Expected format: workspace~repositoryId~branchName~commitId
+                $tempSplit = ($folder.FullName -split "~")
+                $workspaceName = $tempSplit[$tempSplit.Length - 4]    # Workspace name
+                $repositoryId = $tempSplit[$tempSplit.Length - 3]     # Repository GUID
+                $branchName = $tempSplit[$tempSplit.Length - 2]       # Branch name
+                $commitId = ($tempSplit[$tempSplit.Length - 1] -split "/")[0]  # Commit SHA
+
+                # =============================================================================
+                # AZURE DEVOPS REST API: GET COMMIT INFORMATION
+                # =============================================================================
+                # Query Azure DevOps REST API to get detailed commit information
+                $org = "$(System.TeamFoundationCollectionUri)"       # Organization URL
+                $token = $env:ADO_TOKEN                              # Access token
+                $currentProject = "$(System.TeamProject)"           # Current project name
+                $apiUrl = "$($org)$($currentProject)/_apis/git/repositories/$($repositoryId)/commits/$($commitId)?api-version=7.2-preview.1"
+
+                Write-Host "##[debug]API Call: $apiUrl"
+
+                # Execute REST API call to get commit details
+                $commitInfo = Invoke-RestMethod -Uri $apiUrl -Verbose -Headers @{
+                    Authorization = "Bearer $token"
+                }
+                
+                # Log commit information for debugging
+                Write-Host "##[debug]Found commit: $($commitInfo.commitId)"
+                Write-Host "##[debug]Commit author: $($commitInfo.author.name)"
+                Write-Host "##[debug]Commit message: $($commitInfo.comment)"
+
+                # Extract committer email for tracking purposes
+                $committerEmail = $commitInfo.author.email
+                Write-Host "##[debug]Committer email: $committerEmail"
+
+                # =============================================================================
+                # VALIDATE POWER BI REPORT STRUCTURE
+                # =============================================================================
+                # Ensure the .platform file exists (required for Power BI reports)
+                if (!(Test-Path -LiteralPath "$($folder.FullName)/.platform")) {
+                    Write-Error "Could not locate .platform file in $($folder.FullName)"
+                    exit 1
+                }
+
+                try {
+                    # =============================================================================
+                    # READ POWER BI REPORT METADATA
+                    # =============================================================================
+                    # Parse .platform file to get report metadata
+                    $platformContent = Get-Content -LiteralPath "$($folder.FullName)/.platform" -Encoding utf8 | ConvertFrom-Json            
+                    $reportName = $platformContent.metadata.displayName  # Report display name
+                    $logicalId = $platformContent.config.logicalId       # Unique logical identifier
+                    
+                    # Define output path for PBIR Inspector results
+                    $outputFilePath = "./PBIRInspectorTests/$($repositoryId)/$($branchName)/$($logicalId)~$($commitId)~$($currentTime)"
+                    Write-Host "##[debug]Output file path: $outputFilePath"
+
+                    # =============================================================================
+                    # PBIR INSPECTOR CLI EXECUTION
+                    # =============================================================================
+                    # Verify PBIR Inspector CLI is available before running
+                    if (!(Test-Path "./PBIR-Inspector/PBIRInspectorCLI" -PathType Leaf)) {
+                        Write-Error "PBIR Inspector CLI not found at ./PBIR-Inspector/PBIRInspectorCLI"
+                        exit 1
+                    }
+
+                    # Prepare command line arguments for PBIR Inspector
+                    $pbirArgs = @(
+                        "-fabricitem", $folder.FullName,                           # Input: Power BI report folder
+                        "-rules", "./Rules/pbi-inspector-custom-rules.json",      # Custom rules file
+                        "-formats", "JSON",                                       # Output format
+                        "-verbose", "true",                                       # Enable verbose logging
+                        "-output", $outputFilePath                                # Output directory
+                    )
+                    
+                    Write-Host "##[debug]Running PBIR Inspector with args: $($pbirArgs -join ' ')"
+                    
+                    # Execute PBIR Inspector CLI
+                    & "./PBIR-Inspector/PBIRInspectorCLI" @pbirArgs
+                    
+                    # Check for execution errors
+                    if ($LASTEXITCODE -ne 0) {
+                        Write-Error "PBIR Inspector CLI failed with exit code $LASTEXITCODE"
+                        exit 1
+                    }
+
+                    # =============================================================================
+                    # PROCESS PBIR INSPECTOR RESULTS
+                    # =============================================================================
+                    # Retrieve all JSON files generated by PBIR Inspector
+                    $filesToSave = Get-ChildItem -Path $outputFilePath -Recurse -File
+                    foreach ($tempFile in $filesToSave) {
+                        Write-Host "##[debug]Saving $($tempFile.Name) to Eventhouse"
+
+                        # Load and parse JSON results
+                        $results = Get-Content -Path $tempFile.FullName -Raw -Encoding UTF8 | ConvertFrom-Json
+                        
+                        # =============================================================================
+                        # ENRICH RESULTS WITH METADATA
+                        # =============================================================================
+                        # Add contextual information to the results
+                        $results | Add-Member -MemberType NoteProperty -Name "RepositoryId" -Value $repositoryId
+                        $results | Add-Member -MemberType NoteProperty -Name "BranchName" -Value $branchName
+                        $results | Add-Member -MemberType NoteProperty -Name "LogicalId" -Value $logicalId
+                        $results | Add-Member -MemberType NoteProperty -Name "CommitId" -Value $commitId
+                        $results | Add-Member -MemberType NoteProperty -Name "CommittedBy" -Value $committerEmail
+                        $results | Add-Member -MemberType NoteProperty -Name "Timestamp" -Value $currentTime
+                        $results | Add-Member -MemberType NoteProperty -Name "ReportName" -Value $reportName
+                    
+                        # Write enriched results back to file
+                        $results | ConvertTo-Json -Depth 10 | Set-Content -Path $tempFile.FullName -Encoding UTF8
+                    
+                        # =============================================================================
+                        # EVENTHOUSE TABLE CREATION AND VALIDATION
+                        # =============================================================================
+                        # Ensure target table exists in Eventhouse before ingestion
+                        Write-Host "##[debug]Ensuring PBIRInspector results table exists in eventhouse"
+                        $tableCreated = Invoke-FabricTableCreation -ClusterUrl $clusterUrl -Database $database -TableName $pbirInspectorTable -JsonFilePath $tempFile.FullName -TenantId $tenantId -ClientId $clientId -ClientSecret $clientSecret
+                        
+                        if (-not $tableCreated) {
+                            Write-Error "Failed to create or verify PBIRInspector table in eventhouse"
+                            exit 1
+                        }
+
+                        # =============================================================================
+                        # DATA INGESTION TO EVENTHOUSE
+                        # =============================================================================
+                        try {
+                            # Ingest PBIR Inspector results into Eventhouse table
+                            $ingestCount = Invoke-KustoJsonIngest -ClusterUrl $clusterUrl -Database $database -TableName $pbirInspectorTable -JsonFilePath $tempFile.FullName -ClientId $clientId -ClientSecret $clientSecret -TenantId $tenantId
+                            Write-Host "##[debug]Successfully ingested $ingestCount records from $($tempFile.Name) to eventhouse table $pbirInspectorTable"
+                        }
+                        catch {
+                            Write-Error "Failed to ingest $($tempFile.Name) to eventhouse: $($_.Exception.Message)"
+                            exit 1
+                        }
+                    } # End inner foreach (files processing)
+                }
+                catch {
+                    # Handle any errors during folder processing
+                    Write-Error "Failed to process folder $($folder.FullName): $($_.Exception.Message)"
+                    exit 1
+                }
+            } # End outer foreach (report folders processing)
+        displayName: 'Run PBIRInspector CLI on each Report in the Report folder and save test results'
+        
+        # =============================================================================
+        # ENVIRONMENT VARIABLES FOR POWERSHELL SCRIPT
+        # =============================================================================
+        env:
+          CLIENT_SECRET: $(CLIENT_SECRET)  # Service Principal secret (sensitive)
+          ADO_TOKEN: $(ADO_TOKEN)         # Azure DevOps Personal Access Token for REST API

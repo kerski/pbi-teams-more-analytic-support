@@ -1,0 +1,16 @@
+relationship 6d34332e-f8a8-7c5b-8844-9c96cfc14503
+	fromColumn: 'Test Results'.TestsId
+	toColumn: Tests.Id
+
+relationship 40bb1bb6-28bb-8c9a-eaab-ac38a6347b80
+	fromColumn: 'Test Results'.CommitsId
+	toColumn: Commits.Id
+
+relationship 4edf9840-07ea-7920-01ab-1615eca1a8d5
+	fromColumn: 'Test Results'.SeverityId
+	toColumn: Severity.SeverityId
+
+relationship ad3e8532-c503-9d11-f8a7-1c2d14b3603f
+	fromColumn: 'Test Results'.Date
+	toColumn: Calendar.Date
+

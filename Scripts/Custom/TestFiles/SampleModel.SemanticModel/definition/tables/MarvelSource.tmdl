@@ -1,0 +1,162 @@
+table MarvelSource
+	isHidden
+	lineageTag: 1398ee0f-272b-4a82-a465-0ad3a9527f05
+
+	column page_id
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 90efbd2f-4c8e-4802-9c30-8a365e8386ad
+		summarizeBy: sum
+		sourceColumn: page_id
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column name
+		dataType: string
+		isHidden
+		lineageTag: f2c44bae-5db7-41fc-a456-49eff0d7444d
+		summarizeBy: none
+		sourceColumn: name
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column urlslug
+		dataType: string
+		isHidden
+		lineageTag: 1d36baa2-4bea-4ab5-9cc1-4bb760a78c37
+		summarizeBy: none
+		sourceColumn: urlslug
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column ID
+		dataType: string
+		isHidden
+		lineageTag: caa99830-9bba-472c-afd6-22222592549a
+		summarizeBy: none
+		sourceColumn: ID
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column ALIGN
+		dataType: string
+		isHidden
+		lineageTag: 0f7a14b4-c795-44cb-a3d4-9dcfc091ac3f
+		summarizeBy: none
+		sourceColumn: ALIGN
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column EYE
+		dataType: string
+		isHidden
+		lineageTag: 20d4352e-62ac-46b2-a5e8-052180eded7e
+		summarizeBy: none
+		sourceColumn: EYE
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column HAIR
+		dataType: string
+		isHidden
+		lineageTag: ea60ac25-df49-4c18-b092-846a7f4c17b2
+		summarizeBy: none
+		sourceColumn: HAIR
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column SEX
+		dataType: string
+		isHidden
+		lineageTag: 7bffbbad-78b7-4f16-9bca-111612f54300
+		summarizeBy: none
+		sourceColumn: SEX
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column GSM
+		dataType: string
+		isHidden
+		lineageTag: 55c8d845-32d9-44fe-88c9-44a680eeafac
+		summarizeBy: none
+		sourceColumn: GSM
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column ALIVE
+		dataType: string
+		isHidden
+		lineageTag: a6b3d8cc-9410-460c-891e-25e80b772693
+		summarizeBy: none
+		sourceColumn: ALIVE
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column APPEARANCES
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 402cfdd7-08ab-478e-a039-d3abc7f0841c
+		summarizeBy: sum
+		sourceColumn: APPEARANCES
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'FIRST APPEARANCE'
+		dataType: string
+		isHidden
+		lineageTag: 7e67c78a-607b-4a89-9b09-5ada2a2581f0
+		summarizeBy: none
+		sourceColumn: FIRST APPEARANCE
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column Year
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 1ed89e36-864d-414c-9d19-afb0e40a72f1
+		summarizeBy: sum
+		sourceColumn: Year
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition MarvelSource-9b980f40-8504-413c-98b2-7be27f4146c9 = m
+		mode: import
+		source =
+				let
+				    Source = Csv.Document(Web.Contents(WebURL),[Delimiter=",", Columns=13, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+				    #"Promoted Headers" = Table.PromoteHeaders(Source, [PromoteAllScalars=true]),
+				    #"Changed Type" = Table.TransformColumnTypes(#"Promoted Headers",{{"page_id", Int64.Type}, {"name", type text}, {"urlslug", type text}, {"ID", type text}, {"ALIGN", type text}, {"EYE", type text}, {"HAIR", type text}, {"SEX", type text}, {"GSM", type text}, {"ALIVE", type text}, {"APPEARANCES", Int64.Type}, {"FIRST APPEARANCE", type text}, {"Year", Int64.Type}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

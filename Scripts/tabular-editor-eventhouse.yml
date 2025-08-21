@@ -1,0 +1,296 @@
+# =============================================================================
+# Pipeline-Triggered: Tabular Editor Analysis Pipeline
+# =============================================================================
+# This pipeline is triggered by the PBIP-CI pipeline and runs Tabular Editor
+# Best Practice Analyzer (BPA) on semantic models, then ingests results into Eventhouse.
+#
+# Prerequisites:
+# - Tabular Editor CLI executable in .\TabularEditor\TabularEditor.exe
+# - BPA rules file in .\Rules\BPARules.json
+# - Service Principal with access to Eventhouse/Kusto cluster
+# - Variable group 'MYPBITMA-EVENTHOUSE' with required secrets
+# - ADO_TOKEN with repository read permissions for REST API calls
+# =============================================================================
+
+# Trigger Configuration
+# Only triggered by other pipelines, not by code changes
+trigger: none
+
+# Pipeline Variables
+# Reference to variable group containing sensitive environment variables
+variables:
+  - group: MYPBITMA-EVENTHOUSE  # Contains: CLIENT_ID, CLIENT_SECRET, TENANT_ID, CLUSTER_URL, DATABASE, ADO_TOKEN
+
+# =============================================================================
+# PIPELINE RESOURCES
+# =============================================================================
+# Define dependency on upstream pipeline that provides artifacts
+resources:
+  pipelines:
+    - pipeline: test-trigger      # Internal reference name
+      source: PBIP-CI            # Source pipeline name
+      project: PBI-Test          # Source project name
+      trigger:                   # Trigger conditions
+        branches:
+          include:
+            - '*'                # Trigger on any branch
+
+# =============================================================================
+# JOBS SECTION
+# =============================================================================
+jobs:
+  - job: TriggeredBuild
+    workspace:
+      clean: all                 # Clean workspace before starting
+    pool:
+      vmImage: 'windows-latest'  # Use Windows agent for Tabular Editor compatibility
+
+    steps:
+      # =============================================================================
+      # STEP 1: SOURCE CODE CHECKOUT
+      # =============================================================================
+      - checkout: self
+        persistCredentials: true  # Keep credentials for potential git operations
+        fetchDepth: 0            # Fetch full git history
+
+      # =============================================================================
+      # STEP 2: DOWNLOAD ARTIFACTS FROM UPSTREAM PIPELINE
+      # =============================================================================
+      # Download semantic models from the triggering pipeline
+      - task: DownloadBuildArtifacts@1
+        inputs:
+          buildType: 'specific'                           # Download from specific pipeline
+          project: 'PBI-Test'                            # Source project name
+          pipeline: '$(UPSTREAM_PIPELINE_ID)'            # ID of the pipeline that publishes artifacts
+          runVersion: 'latest'                           # Use latest successful run
+          artifactName: 'CombinedModels'                 # Name of artifact to download
+          targetPath: '$(Pipeline.Workspace)/CombinedModels'  # Local download path
+          itemPattern: CombinedModels/**                 # Pattern to match artifact contents
+
+      # =============================================================================
+      # STEP 3: MAIN TABULAR EDITOR ANALYSIS AND INGESTION LOGIC
+      # =============================================================================
+      - task: PowerShell@2
+        inputs:
+          targetType: 'inline'
+          script: |
+            # =============================================================================
+            # ENVIRONMENT VARIABLES SETUP
+            # =============================================================================
+            # Load authentication and connection details from pipeline variables
+            $clientId = "${env:CLIENT_ID}"              # Service Principal Client ID
+            $clientSecret = "${env:CLIENT_SECRET}"      # Service Principal Secret
+            $tenantId = "${env:TENANT_ID}"              # Azure AD Tenant ID
+            $clusterUrl = "${env:CLUSTER_URL}"          # Eventhouse cluster endpoint URL
+            $database = "${env:DATABASE}"               # Eventhouse database name
+            $tabularEditorTable = "tabular_editor_bronze"  # Target table name
+            
+            # Tool and configuration paths
+            $tabularEditorPath = ".\TabularEditor\TabularEditor.exe"  # Tabular Editor CLI executable
+            $bpaFilePath = ".\Rules\BPARules.json"                   # Best Practice Analyzer rules
+
+            # =============================================================================
+            # MODULE IMPORTS
+            # =============================================================================
+            # Import custom modules for Eventhouse ingestion and Tabular Editor operations
+            Import-Module -Name ".\Scripts\Custom\Invoke-FabricJsonIngestion.psm1" -Force 
+            Import-Module -Name ".\Scripts\Custom\Invoke-BestPracticesFromTabularEditor.psm1" -Force
+
+            # =============================================================================
+            # ARTIFACT PATH SETUP
+            # =============================================================================
+            # Define the path to downloaded semantic models
+            $CombinedModelsPath = "$(Pipeline.Workspace)/a/CombinedModels"
+            Write-Host "##[debug]Combined Models Path: $CombinedModelsPath"
+
+            # Find all *.SemanticModel folders recursively in the downloaded artifacts
+            $semanticModelFolders = Get-ChildItem -Path $CombinedModelsPath -Directory -Recurse | Where-Object { $_.Name -like "*.SemanticModel" }
+
+            # Get current timestamp for unique file naming and tracking
+            $currentTime = [DateTime]::UtcNow.ToString('yyyyMMdd_HHmmss')
+            $baseUrl = "$(System.CollectionUri)"        # Base URL for the organization
+            $project = "$(System.TeamProject)"          # Current project name
+
+            # =============================================================================
+            # PROCESS EACH SEMANTIC MODEL
+            # =============================================================================
+            foreach ($folder in $semanticModelFolders) {
+                Write-Host "##[debug]Processing folder: $($folder.FullName)"
+                
+                # =============================================================================
+                # EXTRACT METADATA FROM FOLDER PATH
+                # =============================================================================
+                # Parse folder path to extract workspace, repository, branch, and commit info
+                # Expected format: workspace~repositoryId~branchName~commitId
+                $tempSplit = ($folder.FullName -split "~")
+                $workspaceName = $tempSplit[$tempSplit.Length - 4]    # Workspace name
+                $repositoryId = $tempSplit[$tempSplit.Length - 3]     # Repository GUID
+                $branchName = $tempSplit[$tempSplit.Length - 2]       # Branch name
+                $commitId = ($tempSplit[$tempSplit.Length - 1] -split "\\")[0]  # Commit SHA
+
+                Write-Host "##[debug]Workspace Name: $workspaceName"
+                Write-Host "##[debug]Repository ID: $repositoryId"
+                Write-Host "##[debug]Branch Name: $branchName"
+                Write-Host "##[debug]Commit ID: $commitId"
+
+                # =============================================================================
+                # AZURE DEVOPS REST API: GET COMMIT INFORMATION
+                # =============================================================================
+                # Query Azure DevOps REST API to get detailed commit information
+                $org = "$(System.TeamFoundationCollectionUri)"       # Organization URL
+                $token = $env:ADO_TOKEN                              # Access token
+                $currentProject = "$(System.TeamProject)"           # Current project name
+                $apiUrl = "$($org)$($currentProject)/_apis/git/repositories/$($repositoryId)/commits/$($commitId)?api-version=7.2-preview.1"
+
+                Write-Host "##[debug]API Call: $apiUrl"
+
+                # Execute REST API call to get commit details
+                $commitInfo = Invoke-RestMethod -Uri $apiUrl -Verbose -Headers @{
+                    Authorization = "Bearer $token"
+                }
+                
+                # Log commit information for debugging and tracking
+                Write-Host "##[debug]Found commit: $($commitInfo.commitId)"
+                Write-Host "##[debug]Commit author: $($commitInfo.author.name)"
+                Write-Host "##[debug]Commit message: $($commitInfo.comment)"
+
+                # Extract committer email for tracking purposes
+                $committerEmail = $commitInfo.author.email
+                Write-Host "##[debug]Committer email: $committerEmail"
+
+                # =============================================================================
+                # VALIDATE SEMANTIC MODEL STRUCTURE
+                # =============================================================================
+                # Ensure the .platform file exists (required for semantic models)
+                if (!(Test-Path -LiteralPath "$($folder.FullName)/.platform")) {
+                      Write-Error "Could not locate .platform file in $($folder.FullName)"
+                        exit 1
+                }
+
+                # =============================================================================
+                # READ SEMANTIC MODEL METADATA
+                # =============================================================================
+                # Parse .platform file to get semantic model metadata
+                $platformContent = Get-Content -LiteralPath "$($folder.FullName)/.platform" -Encoding utf8 | ConvertFrom-Json            
+                $semanticModelName = $platformContent.metadata.displayName  # Model display name
+                $logicalId = $platformContent.config.logicalId              # Unique logical identifier
+                
+                # Define output path for Tabular Editor results
+                $outputFilePath = ".\TabularEditorTests\$($repositoryId)\$($branchName)\$($logicalId)~$($commitId)~$($currentTime)"
+                Write-Host "##[debug]Output file path: $outputFilePath"
+
+                # =============================================================================
+                # FIND AND PROCESS TMDL FILES
+                # =============================================================================
+                # Get all model.tmdl files in the semantic model directory
+                $tmdlFiles = Get-ChildItem -Path $($folder.FullName) -Filter "model.tmdl" -File -Recurse
+               
+                foreach ($tmdlFile in $tmdlFiles) {
+                    Write-Host "##[debug]Found TMDL file: $($tmdlFile.FullName)"
+                    
+                    # =============================================================================
+                    # TABULAR EDITOR BEST PRACTICE ANALYSIS
+                    # =============================================================================
+                    # Run Tabular Editor Best Practice Analyzer on the TMDL file
+                    Write-Host "Running Tabular Editor analysis on $($tmdlFile.Name) in $($semanticModelName)"
+                    
+                    Invoke-BestPracticesFromTabularEditor `
+                        -InputFile $tmdlFile.FullName `
+                        -BPAFilePath $bpaFilePath `
+                        -OutputFilePath "$($outputFilePath)\$($semanticModelName).xml" `
+                        -TabularEditorPath $tabularEditorPath -Verbose
+
+                    # =============================================================================
+                    # CONVERT XML RESULTS TO JSON FORMAT
+                    # =============================================================================
+                    # Convert Tabular Editor XML output to JSON for easier processing
+                    $xmlFilePath = "$($outputFilePath)\$($semanticModelName).xml"
+                    Write-Host "##[debug]Converting XML file to JSON: $xmlFilePath"
+                    
+                    if (Test-Path -Path $xmlFilePath) {
+                        try {
+                            # Read and parse XML content
+                            [xml]$xmlContent = Get-Content -Path $xmlFilePath -Raw -Encoding UTF8
+                            
+                            # Convert XML to string format for storage
+                            $xmlString = $xmlContent.OuterXml
+                            
+                            # =============================================================================
+                            # CREATE ENRICHED JSON OBJECT
+                            # =============================================================================
+                            # Build JSON object with metadata and results
+                            $jsonObject = @{
+                                RepositoryId = $repositoryId              # Repository identifier
+                                BranchName = $branchName                  # Source branch name
+                                LogicalId = $logicalId                    # Semantic model logical ID
+                                CommitId = $commitId                      # Commit SHA
+                                CommittedBy = $committerEmail             # Committer email
+                                Timestamp = $currentTime                  # Processing timestamp
+                                SemanticModelName = $semanticModelName    # Model display name
+                                TmdlFileName = $tmdlFile.Name            # Source TMDL file name
+                                Results = $xmlString                      # BPA results in XML format
+                            }
+                            
+                            # Save enriched results as JSON file
+                            $jsonFilePath = "$($outputFilePath)\$($semanticModelName)~$($currentTime).json"
+                            $jsonObject | ConvertTo-Json -Depth 100 | Set-Content -Path $jsonFilePath -Encoding UTF8
+                            
+                            Write-Host "##[debug]Successfully converted XML to JSON: $jsonFilePath"
+                            
+                            # Clean up XML file after successful conversion
+                            Remove-Item -Path $xmlFilePath -Force
+
+                            # =============================================================================
+                            # EVENTHOUSE TABLE CREATION AND VALIDATION
+                            # =============================================================================
+                            # Ensure target table exists in Eventhouse before ingestion
+                            Write-Host "##[debug]Ensuring Tabular Editor results table exists in eventhouse"
+                            $tableCreated = Invoke-FabricTableCreation -ClusterUrl $clusterUrl -Database $database -TableName $tabularEditorTable -JsonFilePath $jsonFilePath -TenantId $tenantId -ClientId $clientId -ClientSecret $clientSecret
+                            
+                            if (-not $tableCreated) {
+                                Write-Error "Failed to create or verify Tabular Editor table in eventhouse"
+                                exit 1
+                            }
+                        }
+                        catch {
+                            Write-Error "Failed to convert XML to JSON: $($_.Exception.Message)"
+                            exit 1
+                        }
+                    }
+                    else {
+                        Write-Error "XML output file not found: $xmlFilePath"
+                        exit 1
+                    }
+                } # End TMDL files processing
+
+                # =============================================================================
+                # BATCH INGESTION TO EVENTHOUSE
+                # =============================================================================
+                # Retrieve all JSON files generated by Tabular Editor analysis and ingest to eventhouse
+                $filesToIngest = Get-ChildItem -Path $outputFilePath -Recurse -File -Filter "*.json"
+
+                foreach ($tempFile in $filesToIngest) {
+                    Write-Host "##[debug]Ingesting $($tempFile.Name) to eventhouse"
+                    
+                    try {
+                        # =============================================================================
+                        # DATA INGESTION TO EVENTHOUSE
+                        # =============================================================================
+                        # Ingest Tabular Editor BPA results into Eventhouse table
+                        $ingestCount = Invoke-KustoJsonIngest -ClusterUrl $clusterUrl -Database $database -TableName $tabularEditorTable -JsonFilePath $tempFile.FullName -ClientId $clientId -ClientSecret $clientSecret -TenantId $tenantId -Verbose
+                        Write-Host "##[debug]Successfully ingested $ingestCount records from $($tempFile.Name) to eventhouse table $tabularEditorTable"
+                    }
+                    catch {
+                        Write-Error "Failed to ingest $($tempFile.Name) to eventhouse: $($_.Exception.Message)"
+                        exit 1
+                    }
+                } # End ingestion processing              
+            } # End semantic model folders processing
+        displayName: 'Run Tabular Editor CLI on each TMDL file in the SemanticModel folder and save test results'
+        
+        # =============================================================================
+        # ENVIRONMENT VARIABLES FOR POWERSHELL SCRIPT
+        # =============================================================================
+        env:
+          CLIENT_SECRET: $(CLIENT_SECRET)  # Service Principal secret (sensitive)
+          ADO_TOKEN: $(ADO_TOKEN)         # Azure DevOps Personal Access Token for REST API

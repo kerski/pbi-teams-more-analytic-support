@@ -1,0 +1,74 @@
+table DataTypes
+	lineageTag: 7f69575d-04de-4b21-8397-70fa031cdead
+
+	column 'Whole Number'
+		dataType: int64
+		formatString: 0
+		lineageTag: 0f9bab8a-c892-4ff5-8ff3-95d4387d1e8a
+		summarizeBy: sum
+		sourceColumn: Whole Number
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Decimal Number'
+		dataType: double
+		lineageTag: 7536a752-6b53-484c-9f5a-3ffec4e7cad0
+		summarizeBy: sum
+		sourceColumn: Decimal Number
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column Boolean
+		dataType: boolean
+		formatString: """TRUE"";""TRUE"";""FALSE"""
+		lineageTag: 0a6241d6-eba0-43c1-b18b-164075811fac
+		summarizeBy: none
+		sourceColumn: Boolean
+
+		annotation SummarizationSetBy = Automatic
+
+	column Text
+		dataType: string
+		lineageTag: 9c5b6fcd-85af-4efd-97c5-2a6039698a4b
+		summarizeBy: none
+		sourceColumn: Text
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: dateTime
+		formatString: Long Date
+		lineageTag: 9b5893c4-1bae-41ea-9259-9c71aa2fa810
+		summarizeBy: none
+		sourceColumn: Date
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation UnderlyingDateTimeDataType = Date
+
+	column Currency
+		dataType: decimal
+		formatString: \$#,0.00;(\$#,0.00);\$#,0.00
+		lineageTag: 8de8e7c5-4c39-4bf7-b725-059c868868da
+		summarizeBy: sum
+		sourceColumn: Currency
+
+		changedProperty = DataType
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"currencyCulture":"en-US"}
+
+	partition DataTypes = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i45WMlTSUTLUMzIGUiFFpakgKiOzWAGISlIrSkCS+ob6RgZGJmB1lpZKsbEA", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [#"Whole Number" = _t, #"Decimal Number" = _t, Boolean = _t, Text = _t, Date = _t, Currency = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Whole Number", Int64.Type}, {"Decimal Number", type number}, {"Boolean", type logical}, {"Text", type text}, {"Date", type date}, {"Currency", type number}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

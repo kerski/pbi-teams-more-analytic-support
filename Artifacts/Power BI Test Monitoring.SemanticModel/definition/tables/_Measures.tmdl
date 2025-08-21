@@ -1,0 +1,83 @@
+table _Measures
+	lineageTag: 26fc9b1c-2ab2-4114-acb2-3ab870d8d183
+
+	measure 'Failed Tests' = CALCULATE(COUNTROWS('Test Results'),KEEPFILTERS('Test Results'[Passed]=0))+0
+		formatString: 0
+		lineageTag: 7105ff61-a291-4083-8402-0c1c45ab51e5
+
+	measure 'Number of Tests' = COUNTROWS('Test Results') + 0
+		formatString: 0
+		lineageTag: 239caede-a151-4dcf-a15e-a1c7cc93c536
+
+	measure 'Selected Time Zone Offset' = SELECTEDVALUE('Timezones'[DAX UTC Offset],0)
+		displayFolder: Date and Time Zone Presentation
+		lineageTag: 4fe3f9b5-cc08-477c-ba1f-3aa575cf18f7
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	measure 'Selected Time Zone Text' =
+			
+			VAR _Output = "Time Represented in " & SELECTEDVALUE('Timezones'[Display Name],"UTC") & " - Latest Tests Results: " & [Latest Test Result Date and Time]
+			RETURN _Output
+		displayFolder: Date and Time Zone Presentation
+		lineageTag: 5abb822b-0e4e-4a46-a765-93a69e74dbfa
+
+	measure 'Date of Test Run with Time Zone' = ```
+			
+			VAR _SelectedDate = MAX('Test Results'[Date])
+			VAR _SelectedTime = MAX('Test Results'[Time])
+			VAR _DateTime = 
+			    IF(
+			        ISBLANK(_SelectedDate) || ISBLANK(_SelectedTime),
+			        BLANK(),
+			        _SelectedDate + _SelectedTime
+			    )
+			VAR _TimeAdjustment = _DateTime + DIVIDE([Selected Time Zone Offset], 24, 0)
+			
+			RETURN
+			IF(ISBLANK(_DateTime), BLANK(), _TimeAdjustment)
+			```
+		formatString: General Date
+		displayFolder: Date and Time Zone Presentation
+		lineageTag: 16eab10e-95d0-4f35-8585-053ab2cd51d0
+
+	measure 'Latest Test Result Date and Time' =
+			
+			VAR _MaxDate = MAXX(ALL('Test Results'),'Test Results'[Date])
+			VAR _Time = CALCULATE(
+			    MAX('Test Results'[Time]),
+			    'Test Results'[Date] = _MaxDate
+			)
+			RETURN
+			IF(
+			    ISBLANK(_MaxDate) || ISBLANK(_Time),
+			    BLANK(),
+			    _MaxDate + _Time + DIVIDE([Selected Time Zone Offset], 24, 0)
+			)
+		formatString: General Date
+		displayFolder: Date and Time Zone Presentation
+		lineageTag: 88ba2389-32ba-4306-918a-46873b3ee2f3
+
+	column Column1
+		dataType: string
+		isHidden
+		isAvailableInMdx: false
+		lineageTag: e4fdba23-9696-4d1a-8311-06b44c60769b
+		summarizeBy: none
+		sourceColumn: Column1
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Measures = m
+		mode: import
+		source =
+				let
+				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i44FAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t]),
+				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}})
+				in
+				    #"Changed Type"
+
+	annotation PBI_ResultType = Table
+

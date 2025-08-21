@@ -1,0 +1,207 @@
+table Timezones
+	lineageTag: 554066d5-eba2-4388-8c0b-21d723be4a55
+
+	column 'Timezone ID'
+		dataType: int64
+		formatString: 0
+		lineageTag: 1c8ae096-3b52-4c7c-98f6-020f84e678fb
+		summarizeBy: none
+		sourceColumn: Timezone ID
+
+		annotation SummarizationSetBy = Automatic
+
+	column Name
+		dataType: string
+		lineageTag: c0406bbd-2bec-4aec-8ccc-f0cc8f9925a2
+		summarizeBy: none
+		sourceColumn: Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Display Name'
+		dataType: string
+		lineageTag: 895028ec-234f-46d0-b7f4-23ae40b737ca
+		summarizeBy: none
+		sourceColumn: Display Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'UTC Offset'
+		dataType: string
+		lineageTag: 8477384c-63a4-44ae-94d7-4e3e7f021c7f
+		summarizeBy: none
+		sourceColumn: UTC Offset
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'DAX UTC Offset'
+		dataType: double
+		lineageTag: 6a6ed946-61c9-44fe-bffe-f9709f0c68f5
+		summarizeBy: none
+		sourceColumn: DAX UTC Offset
+
+		annotation SummarizationSetBy = Automatic
+
+		annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+	column 'Timezone Selection'
+		dataType: string
+		lineageTag: 69176bc9-b38e-4cc7-9808-a07feed92013
+		summarizeBy: none
+		sourceColumn: Timezone Selection
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Timezones = m
+		mode: import
+		source = ```
+				let
+				    // Define the column names  
+				    ColumnNames = {"Timezone ID", "Name", "Timezone Selection", "UTC Offset"},  
+				  
+				    // Define the rows of data  
+				    Rows = {  
+				        {0,"Dateline Standard Time","(UTC-12:00) International Date Line West","-12:00"},
+				        {1,"UTC-11","(UTC-11:00) Coordinated Universal Time -11","-11:00"},
+				        {2,"Hawaiian Standard Time","(UTC-10:00) Hawaii","-10:00"},
+				        {3,"Alaskan Standard Time","(UTC-09:00) Alaska","-09:00"},
+				        {4,"Pacific Standard Time","(UTC-08:00) Pacific Time (US and Canada)","-08:00"},
+				        {5,"Pacific Standard Time (Mexico)","(UTC-08:00) Baja California","-08:00"},
+				        {6,"Mountain Standard Time","(UTC-07:00) Mountain Time (US and Canada)","-07:00"},
+				        {7,"Mountain Standard Time (Mexico)","(UTC-07:00) Chihuahua, La Paz, Mazatlan","-07:00"},
+				        {8,"US Mountain Standard Time","(UTC-07:00) Arizona","-07:00"},
+				        {9,"Canada Central Standard Time","(UTC-06:00) Saskatchewan","-06:00"},
+				        {10,"Central America Standard Time","(UTC-06:00) Central America","-06:00"},
+				        {11,"Central Standard Time","(UTC-06:00) Central Time (US and Canada)","-06:00"},
+				        {12,"Central Standard Time (Mexico)","((UTC-06:00) Guadalajara, Mexico City, Monterrey","-06:00"},
+				        {13,"Eastern Standard Time","(UTC-05:00) Eastern Time (US and Canada)","-05:00"},
+				        {14,"SA Pacific Standard Time","(UTC-05:00) Bogota, Lima, Quito","-05:00"},
+				        {15,"US Eastern Standard Time","(UTC-05:00) Indiana (East)","-05:00"},
+				        {16,"Venezuela Standard Time","(UTC-04:00) Caracas","-04:00"},
+				        {17,"Atlantic Standard Time","(UTC-04:00) Atlantic Time (Canada)","-04:00"},
+				        {18,"Central Brazilian Standard Time","(UTC-04:00) Cuiaba","-04:00"},
+				        {19,"Pacific SA Standard Time","(UTC-04:00) Santiago","-04:00"},
+				        {20,"SA Western Standard Time","(UTC-04:00) Georgetown, La Paz, Manaus, San Juan","-04:00"},
+				        {21,"Paraguay Standard Time","(UTC-04:00) Asuncion","-04:00"},
+				        {22,"Newfoundland Standard Time","(UTC-03:30) Newfoundland","-3:30"},
+				        {23,"E. South America Standard Time","(UTC-03:00) Brasilia","-03:00"},
+				        {24,"Greenland Standard Time","(UTC-03:00) Greenland","-03:00"},
+				        {25,"Montevideo Standard Time","(UTC-03:00) Montevideo","-03:00"},
+				        {26,"SA Eastern Standard Time","(UTC-03:00) Cayenne, Fortaleza","-03:00"},
+				        {27,"Argentina Standard Time","(UTC-03:00) Buenos Aires","-03:00"},
+				        {28,"Mid-Atlantic Standard Time","(UTC-02:00) Mid-Atlantic","-02:00"},
+				        {29,"UTC-02","(UTC-02:00) Coordinated Universal Time -02","-02:00"},
+				        {30,"Azores Standard Time","(UTC-01:00) Azores","-01:00"},
+				        {31,"Cape Verde Standard Time","(UTC-01:00) Cabo Verde Is.","-01:00"},
+				        {32,"GMT Standard Time","(UTC) Dublin, Edinburgh, Lisbon, London","0:00"},
+				        {33,"Greenwich Standard Time","(UTC) Monrovia, Reykjavik","0:00"},
+				        {34,"Morocco Standard Time","(UTC) Casablanca","0:00"},
+				        {35,"UTC","(UTC) Coordinated Universal Time","0:00"},
+				        {36,"Central Europe Standard Time","(UTC+01:00) Belgrade, Bratislava, Budapest, Ljubljana, Prague","+01:00"},
+				        {37,"Central European Standard Time","(UTC+01:00) Sarajevo, Skopje, Warsaw, Zagreb","+01:00"},
+				        {38,"Romance Standard Time","(UTC+01:00) Brussels, Copenhagen, Madrid, Paris","+01:00"},
+				        {39,"W. Central Africa Standard Time","(UTC+01:00) West Central Africa","+01:00"},
+				        {40,"W. Europe Standard Time","(UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna","+01:00"},
+				        {41,"Namibia Standard Time","(UTC+01:00) Windhoek","+01:00"},
+				        {42,"E. Europe Standard Time","(UTC+02:00) Minsk","+02:00"},
+				        {43,"Egypt Standard Time","(UTC+02:00) Cairo","+02:00"},
+				        {44,"FLE Standard Time","(UTC+02:00) Helsinki, Kyiv, Riga, Sofia, Tallinn, Vilnius","+02:00"},
+				        {45,"GTB Standard Time","(UTC+02:00) Athens, Bucharest","+02:00"},
+				        {46,"Israel Standard Time","(UTC+02:00) Jerusalem","+02:00"},
+				        {47,"Jordan Standard Time","(UTC+02:00) Amman","+02:00"},
+				        {48,"Middle East Standard Time","(UTC+02:00) Beirut","+02:00"},
+				        {49,"South Africa Standard Time","(UTC+02:00) Harare, Pretoria","+02:00"},
+				        {50,"Syria Standard Time","(UTC+02:00) Damascus","+02:00"},
+				        {51,"Turkey Standard Time","(UTC+03:00) Istanbul","+03:00"},
+				        {52,"Arab Standard Time","(UTC+03:00) Kuwait, Riyadh","+03:00"},
+				        {53,"Arabic Standard Time","(UTC+03:00) Baghdad","+03:00"},
+				        {54,"E. Africa Standard Time","(UTC+03:00) Nairobi","+03:00"},
+				        {55,"Kaliningrad Standard Time","(UTC+03:00) Kaliningrad","+03:00"},
+				        {56,"Iran Standard Time","(UTC+03:30) Tehran","+03:30"},
+				        {57,"Russian Standard Time","(UTC+03:00) Moscow, St. Petersburg, Volgograd","+03:00"},
+				        {58,"Arabian Standard Time","(UTC+04:00) Abu Dhabi, Muscat","+04:00"},
+				        {59,"Azerbaijan Standard Time","(UTC+04:00) Baku","+04:00"},
+				        {60,"Caucasus Standard Time","(UTC+04:00) Yerevan","+04:00"},
+				        {61,"Georgian Standard Time","(UTC+04:00) Tbilisi","+04:00"},
+				        {62,"Mauritius Standard Time","(UTC+04:00) Port Louis","+04:00"},
+				        {63,"Afghanistan Standard Time","(UTC+04:30) Kabul","+04:30"},
+				        {64,"West Asia Standard Time","(UTC+05:00) Toshkent","+05:00"},
+				        {65,"Pakistan Standard Time","(UTC+05:00) Islamabad, Karachi","+05:00"},
+				        {66,"India Standard Time","(UTC+05:30) Chennai, Kolkata, Mumbai, New Delhi","+05:30"},
+				        {67,"Sri Lanka Standard Time","(UTC+05:30) Sri Jayawardenepura","+05:30"},
+				        {68,"Nepal Standard Time","(UTC+05:45) Kathmandu","+05:45"},
+				        {69,"Ekaterinburg Standard Time","(UTC+05:00) Ekaterinburg","+05:00"},
+				        {70,"Central Asia Standard Time","(UTC+06:00) Astana","+06:00"},
+				        {71,"Bangladesh Standard Time","(UTC+06:00) Dhaka","+06:00"},
+				        {72,"Myanmar Standard Time","(UTC+06:30) Yangon (Rangoon)","+06:30"},
+				        {73,"N. Central Asia Standard Time","(UTC+07:00) Novosibirsk","+07:00"},
+				        {74,"SE Asia Standard Time","(UTC+07:00) Bangkok, Hanoi, Jakarta","+07:00"},
+				        {75,"North Asia Standard Time","(UTC+07:00) Krasnoyarsk","+07:00"},
+				        {76,"China Standard Time","(UTC+08:00) Beijing, Chongqing, Hong Kong, Urumqi","+08:00"},
+				        {77,"Singapore Standard Time","(UTC+08:00) Kuala Lumpur, Singapore","+08:00"},
+				        {78,"Taipei Standard Time","(UTC+08:00) Taipei","+08:00"},
+				        {79,"W. Australia Standard Time","(UTC+08:00) Perth","+08:00"},
+				        {80,"Ulaanbaatar Standard Time","(UTC+08:00) Ulaanbaatar","+08:00"},
+				        {81,"North Asia East Standard Time","(UTC+08:00) Irkutsk","+08:00"},
+				        {82,"Korea Standard Time","(UTC+09:00) Seoul","+09:00"},
+				        {83,"Tokyo Standard Time","(UTC+09:00) Osaka, Sapporo, Tokyo","+09:00"},
+				        {84,"AUS Central Standard Time","(UTC+09:30) Darwin","+09:30"},
+				        {85,"Cen. Australia Standard Time","(UTC+09:30) Adelaide","+09:30"},
+				        {86,"Yakutsk Standard Time","(UTC+09:00) Yakutsk","+09:00"},
+				        {87,"AUS Eastern Standard Time","(UTC+10:00) Canberra, Melbourne, Sydney","+10:00"},
+				        {88,"E. Australia Standard Time","(UTC+10:00) Brisbane","+10:00"},
+				        {89,"Tasmania Standard Time","(UTC+10:00) Hobart","+10:00"},
+				        {90,"West Pacific Standard Time","(UTC+10:00) Guam, Port Moresby","+10:00"},
+				        {91,"Vladivostok Standard Time","(UTC+10:00) Vladivostok","+10:00"},
+				        {92,"Central Pacific Standard Time","(UTC+11:00) Solomon Is., New Caledonia","+11:00"},
+				        {93,"Magadan Standard Time","(UTC+12:00) Magadan","+12:00"},
+				        {94,"Fiji Standard Time","(UTC+12:00) Fiji","+12:00"},
+				        {95,"New Zealand Standard Time","(UTC+12:00) Auckland, Wellington","+12:00"},
+				        {96,"UTC+12","(UTC+12:00) Coordinated Universal Time +12","+12:00"},
+				        {97,"Tonga Standard Time","(UTC+13:00) Nuku'alofa","+13:00"},
+				        {98,"Samoa Standard Time","(UTC-11:00) Samoa","-11:00"}
+				    },  
+				  
+				    // Create the table using #table  
+				    TimeZoneTable = #table(ColumnNames, Rows) , 
+				    #"Changed Type" = Table.TransformColumnTypes(TimeZoneTable,{{"Timezone ID", Int64.Type}, {"Name", type text}, {"UTC Offset", type text}}),
+				    #"Cleaned Text" = Table.TransformColumns(#"Changed Type",{{"Name", Text.Clean, type text}}),
+				    // Added Fixed UTC Now
+				    #"Calculate UTC Now" = Table.AddColumn(#"Cleaned Text", "Fixed UTC Now", each Date.AddDays(DateTimeZone.FixedUtcNow(),0)),
+				    #"Convert to DTZ" = Table.TransformColumnTypes(#"Calculate UTC Now",{{"Fixed UTC Now", type datetimezone}}),
+				    #"Convert to Date" = Table.TransformColumnTypes(#"Convert to DTZ",{{"Fixed UTC Now", type date}}),
+				    // Added Start of US Daylight Savings
+				    #"Calculate Start of US Daylight Savings" = Table.AddColumn(#"Convert to Date", "Start of US Daylight Savings", each Date.StartOfWeek(#date(Date.Year([Fixed UTC Now]), 3, 14), Day.Sunday)),
+				    // Added End of Use Daylight Savings
+				    #"Calculate End of US Daylight Savings" = Table.AddColumn(#"Calculate Start of US Daylight Savings", "End of US Daylight Savings", each Date.StartOfWeek(#date(Date.Year([Fixed UTC Now]), 11, 7), Day.Sunday)),
+				    #"Change Start and End to Date Type" = Table.TransformColumnTypes(#"Calculate End of US Daylight Savings",{{"Start of US Daylight Savings", type date}, {"End of US Daylight Savings", type date}}),
+				    // Calculate if the date falls within US Daylight Savings
+				    #"Calculate if US Daylight Savings" = Table.AddColumn(#"Change Start and End to Date Type", "Is Daylight Savings Time in United States", each if [Fixed UTC Now] >= [Start of US Daylight Savings] and [Fixed UTC Now] <= [End of US Daylight Savings] then true else false),
+				    #"Convert to Boolean" = Table.TransformColumnTypes(#"Calculate if US Daylight Savings",{{"Is Daylight Savings Time in United States", type logical}}),
+				    #"Split Column by Colon" = Table.SplitColumn(#"Convert to Boolean", "UTC Offset", Splitter.SplitTextByEachDelimiter({":"}, QuoteStyle.Csv, false), {"UTC Offset - Hours", "UTC Offset - Minutes"}),
+				    #"Convert Numbers to Int" = Table.TransformColumnTypes(#"Split Column by Colon",{{"UTC Offset - Hours", Int64.Type}, {"UTC Offset - Minutes", Int64.Type}}),
+				    // Added Adjust Hours
+				    #"Calculate Adjust Hours" = Table.AddColumn(#"Convert Numbers to Int", "Adjust Hours", each if [Timezone ID] = 2 or [Timezone ID] = 3 or [Timezone ID] = 4 or [Timezone ID] = 6 or [Timezone ID] = 11 or [Timezone ID] = 13 or [Timezone ID] = 15 then if [Is Daylight Savings Time in United States] then [#"UTC Offset - Hours"] + 1 else [#"UTC Offset - Hours"] else [#"UTC Offset - Hours"]),
+				    // Added Adjust Name for hours
+				    #"Calculate Adjust Name" = Table.AddColumn(#"Calculate Adjust Hours", "Adjust Name", each if [Timezone ID] = 2 or [Timezone ID] = 3 or [Timezone ID] = 4 or [Timezone ID] = 6 or [Timezone ID] = 11 or [Timezone ID] = 13 or [Timezone ID] = 15 then if [Is Daylight Savings Time in United States] then Text.Replace([Name],"Standard","Daylight") else [Name] else [Name]),
+				    #"Rename Adjust Name to Name" = Table.RenameColumns(#"Calculate Adjust Name",{{"Adjust Name", "Display Name"}}),
+				    // Added UTC Offest - Right
+				    #"Calculate UTC Offset - Right" = Table.AddColumn(#"Rename Adjust Name to Name", "UTC Offset - Right", each if [#"UTC Offset - Minutes"] = 0 or [#"UTC Offset - Minutes"] = null then "00" else Number.ToText([#"UTC Offset - Minutes"])),
+				    // Added UTC Offset
+				    #"Calculate Adjust UTC Offset" = Table.AddColumn(#"Calculate UTC Offset - Right", "UTC Offset", each Number.ToText([Adjust Hours]) & ":" & [#"UTC Offset - Right"]),
+				    #"Convert 30 minutes to 5" = Table.ReplaceValue(#"Calculate Adjust UTC Offset",30,5,Replacer.ReplaceValue,{"UTC Offset - Minutes"}),
+				    #"Convert null to 0" = Table.ReplaceValue(#"Convert 30 minutes to 5",null,0,Replacer.ReplaceValue,{"UTC Offset - Minutes"}),
+				    #"Merged Columns" = Table.CombineColumns(Table.TransformColumnTypes(#"Convert null to 0", {{"Adjust Hours", type text}, {"UTC Offset - Minutes", type text}}, "en-US"),{"Adjust Hours", "UTC Offset - Minutes"},Combiner.CombineTextByDelimiter(".", QuoteStyle.None),"Merged"),
+				    #"Change to Decimal" = Table.TransformColumnTypes(#"Merged Columns",{{"Merged", type number}}),
+				    #"Rename Merged to DAX UTC Offset" = Table.RenameColumns(#"Change to Decimal",{{"Merged", "DAX UTC Offset"}}),
+				    #"Reordered Columns" = Table.ReorderColumns(#"Rename Merged to DAX UTC Offset",{"Timezone ID", "Name", "Display Name", "Timezone Selection", "UTC Offset", "DAX UTC Offset", "Fixed UTC Now", "Is Daylight Savings Time in United States", "UTC Offset - Hours", "UTC Offset - Right"}),
+				    #"Removed Intermediate Columns" = Table.RemoveColumns(#"Reordered Columns",{"Fixed UTC Now", "Is Daylight Savings Time in United States", "UTC Offset - Hours", "UTC Offset - Right", "Start of US Daylight Savings", "End of US Daylight Savings"}),
+				    #"Changed Type1" = Table.TransformColumnTypes(#"Removed Intermediate Columns",{{"Timezone Selection", type text}, {"Display Name", type text}})
+				in
+				    #"Changed Type1"
+				```
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

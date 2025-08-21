@@ -1,0 +1,284 @@
+# =============================================================================
+# PR-Triggered Pipeline: Eventhouse Error Checker
+# =============================================================================
+# This pipeline queries Kusto/Eventhouse via REST API to check for test failures
+# in the source branch of a Pull Request. It fails the PR if errors are found.
+#
+# Prerequisites:
+# - Service Principal with access to Kusto cluster
+# - Variable group 'MYPBITMA-EVENTHOUSE' with required secrets
+# - ADO_TOKEN with repository read permissions for REST API calls
+# =============================================================================
+
+# Trigger Configuration
+# Only run on Pull Requests, not on direct pushes
+trigger: none
+pr:
+  branches:
+    include:
+      - uat      # User Acceptance Testing branch
+      - main     # Production branch
+
+# Pipeline Variables
+# Reference to variable group containing sensitive environment variables
+variables:
+  - group: MYPBITMA-EVENTHOUSE  # Contains: CLIENT_ID, CLIENT_SECRET, TENANT_ID, CLUSTER_URL, DATABASE, ADO_TOKEN
+
+# =============================================================================
+# JOBS SECTION
+# =============================================================================
+jobs:
+- job: PR_Kusto_Query
+  displayName: 'Query Kusto Table on PR Commit using REST API'
+  pool:
+    vmImage: 'ubuntu-latest'
+
+  steps:
+  # =============================================================================
+  # STEP 1: SOURCE CODE CHECKOUT
+  # =============================================================================
+  - checkout: self
+    fetchDepth: 0            # Fetch full git history for complete branch info
+    clean: true              # Clean workspace before checkout
+    persistCredentials: true # Keep credentials for potential git operations
+
+  # =============================================================================
+  # STEP 2: PR INFORMATION DISPLAY
+  # =============================================================================
+  - script: |
+      echo "PR Source Commit ID: $(System.PullRequest.SourceCommitId)"
+    displayName: 'Print PR commit ID'
+
+  # =============================================================================
+  # STEP 3: MAIN KUSTO QUERY AND ERROR CHECKING LOGIC
+  # =============================================================================
+  - task: PowerShell@2
+    displayName: 'Print PR Variables & Query Kusto'
+    inputs:
+      targetType: 'inline'
+      script: |
+        # =============================================================================
+        # ENVIRONMENT VARIABLES SETUP
+        # =============================================================================
+        # Load authentication and connection details from pipeline variables
+        $clientId = $env:CLIENT_ID       # Service Principal Client ID
+        $clientSecret = $env:CLIENT_SECRET # Service Principal Secret
+        $tenantId = $env:TENANT_ID       # Azure AD Tenant ID
+        $clusterUrl = $env:CLUSTER_URL   # Kusto cluster endpoint URL
+        $database = $env:DATABASE        # Kusto database name
+        $table = "Test Results"          # Target table name
+
+        # =============================================================================
+        # HELPER FUNCTIONS
+        # =============================================================================
+        # Safely retrieve pipeline variables with error handling
+        function Get-PipelineVar($name) {
+            if (Test-Path env:$name) {
+                $value = Get-Item env:$name
+                Write-Host "$name loaded: $($value.Value)"
+                return $value.Value
+            } else {
+                Write-Warning "$name not defined, skipping..."
+                return $null
+            }
+        }
+
+        # =============================================================================
+        # PULL REQUEST INFORMATION EXTRACTION
+        # =============================================================================
+        # Extract PR details from Azure DevOps system variables
+        $commitId = Get-PipelineVar "SYSTEM_PULLREQUEST_SOURCECOMMITID"
+        $fullSourceBranch = Get-PipelineVar "SYSTEM_PULLREQUEST_SOURCEBRANCH"
+        $sourceRepoUri = Get-PipelineVar "SYSTEM_PULLREQUEST_SOURCEREPOSITORYURI"
+        $sourceRepoId  = Get-PipelineVar "SYSTEM_PULLREQUEST_SOURCEREPOSITORYID"
+        $prId = Get-PipelineVar "SYSTEM_PULLREQUEST_PULLREQUESTID"
+        $fullTargetBranch = Get-PipelineVar "SYSTEM_PULLREQUEST_TARGETBRANCH"
+
+        # Clean branch names by removing 'refs/heads/' prefix
+        $sourceBranch = if ($fullSourceBranch) { $fullSourceBranch -replace '^refs/heads/', '' } else { "<empty>" }
+        $targetBranch = if ($fullTargetBranch) { $fullTargetBranch -replace '^refs/heads/', '' } else { "<empty>" }
+
+        # =============================================================================
+        # REPOSITORY ID RESOLUTION (FALLBACK LOGIC)
+        # =============================================================================
+        # If SourceRepositoryId is not available, query Azure DevOps REST API to get it
+        if (-not $sourceRepoId -and $sourceRepoUri) {
+            Write-Host "Repository ID not defined; querying Azure DevOps REST API..."
+            
+            # Extract organization and authentication details
+            $org = "$(System.TeamFoundationCollectionUri)"
+            $token = $env:ADO_TOKEN
+
+            # Parse project and repository names from PR URI
+            $parts = $sourceRepoUri -split '/'
+            $prProjectName = $parts[-3]  # Project name is 3rd from end
+            $prRepoName = $parts[-1]     # Repository name is last part
+
+            Write-Host "PR Project Name: $prProjectName"
+            Write-Host "PR Repository Name: $prRepoName"
+
+            # Construct Azure DevOps REST API URL
+            $apiUrl = "$org$prProjectName/_apis/git/repositories?api-version=7.1"
+            Write-Host $apiUrl
+            
+            # Execute REST API call to get repository information
+            $repos = Invoke-RestMethod -Uri $apiUrl -Verbose -Headers @{
+                Authorization = "Bearer $token"
+            }
+
+            # Debug: Output repository response for troubleshooting
+            $reposJson = $repos | ConvertTo-Json -Depth 5
+            Write-Host $reposJson
+
+            # Find matching repository by project name and repository name
+            $matchingRepo = $repos.value | Where-Object {
+                $_.name -eq $prRepoName -and $_.project.name -eq $prProjectName
+            }
+
+            # Extract repository ID if match found
+            if ($matchingRepo) {
+                $sourceRepoId = $matchingRepo.id
+                Write-Host "Matching repository ID: $sourceRepoId"
+            } else {
+                Write-Warning "Could not find repository matching Project: $prProjectName and Repo: $prRepoName"
+                $sourceRepoId = $null
+            }
+        }
+
+        # =============================================================================
+        # PR INFORMATION SUMMARY OUTPUT
+        # =============================================================================
+        Write-Host "=== PR Info ==="
+        Write-Host "PR ID: $prId"
+        Write-Host "Source Branch: $sourceBranch"
+        Write-Host "Target Branch: $targetBranch"
+        Write-Host "Commit ID: $commitId"
+        Write-Host "Source Repository URI: $sourceRepoUri"
+        Write-Host "Source Repository ID: $sourceRepoId"
+        Write-Host "================"
+
+        # =============================================================================
+        # AZURE AD AUTHENTICATION
+        # =============================================================================
+        # Acquire access token for Kusto cluster using Service Principal
+        $tokenBody = @{ 
+            grant_type = 'client_credentials'
+            client_id = $ClientId
+            client_secret = $ClientSecret
+            scope = 'https://kusto.kusto.windows.net/.default'  # Kusto-specific scope
+        }
+        
+        $tokenResponse = Invoke-RestMethod -Uri "https://login.microsoftonline.com/$TenantId/oauth2/v2.0/token" -Method POST -Body $tokenBody -ContentType 'application/x-www-form-urlencoded'
+        $accessToken = $tokenResponse.access_token
+        
+        # Prepare headers for Kusto REST API calls
+        $headers = @{ 
+            Authorization = "Bearer $accessToken"
+            'Content-Type' = 'application/json'
+            Accept = 'application/json' 
+        }
+
+        # =============================================================================
+        # KUSTO QUERY: CHECK FOR TEST FAILURES
+        # =============================================================================
+        Write-Host "##[debug]Checking if table for errors on the source branch: $($sourceBranch)"
+        
+        # Complex Kusto query to find test failures:
+        # 1. Get failed tests (Passed == 0) with severity 3 (errors)
+        # 2. Join with Commits table to filter by source branch and repository
+        # 3. Join with Tests table to get test details
+        # 4. Get the most recent test run for each unique test
+        # 5. Order and project relevant fields
+        $checkQuery = "TestResults
+                      | join kind=inner (
+                          Commits
+                          | where BranchName == '$($sourceBranch)'
+                            and RepositoryId == '$($sourceRepoId)'
+                        ) on `$left.CommitsId == `$right.Id
+                        | where SeverityId == 3 
+                        | join kind=inner (
+                            Tests
+                        ) on `$left.TestsId == `$right.Id
+                        | extend RunDateTime = todatetime(Date) + totimespan(strcat('0.', Time))
+                        | summarize arg_max(RunDateTime, *) by ArtifactName, Type, Source, TestsId
+                        | project ArtifactName, Type, Source, TestName = Name, TestDescription = Description, Details, Passed, RunDateTime
+                        | where Passed == 0
+                        | order by ArtifactName, Type, Source"
+
+        Write-Host "##[debug]Check query: $($checkQuery)"
+
+        # Prepare query request body
+        $queryBody = @{
+            db  = $Database
+            csl = $checkQuery
+        } | ConvertTo-Json
+
+        Write-Host "##[debug]Query body: $($queryBody | ConvertTo-Json -Depth 3)"
+
+        # =============================================================================
+        # EXECUTE KUSTO QUERY VIA REST API
+        # =============================================================================
+        $queryUrl = "$clusterUrl/v1/rest/query"
+        Write-Host "##[debug]Executing error checks via REST API..."
+        
+        $createResponse = Invoke-RestMethod -Uri $queryUrl -Method POST -Headers $headers -Body $queryBody -Verbose
+        Write-Host "##[debug]Query error response: $($createResponse | ConvertTo-Json -Depth 3)"
+
+        # =============================================================================
+        # PROCESS QUERY RESULTS AND CREATE AZURE DEVOPS ANNOTATIONS
+        # =============================================================================
+        # Check if query returned any results
+        if ($createResponse -and $createResponse.Tables -and $createResponse.Tables.Count -gt 0) {
+            $table = $createResponse.Tables[0]
+            
+            # If there are test failure rows, process each one
+            if ($table.Rows -and $table.Rows.Count -gt 0) {
+                Write-Host "##[warning]Found $($table.Rows.Count) test failures for this PR"
+                
+                # Process each test failure as an Azure DevOps error
+                foreach ($row in $table.Rows) {
+                    if ($row -is [Array] -and $row.Count -ge 6) {
+                        # Extract test failure details from row columns
+                        $artifactName = $row[0]      # Name of the artifact being tested
+                        $type = $row[1]              # Type of test
+                        $source = $row[2]            # Source/location of test
+                        $testName = $row[3]          # Test name
+                        $testDescription = $row[4]   # Test description
+                        $details = $row[5]           # Additional failure details
+                        
+                        # Create structured error messages for Azure DevOps
+                        $errorMessage = "[$source] $testName - $testDescription"
+                        $errorDetails = "Artifact: $artifactName`nType: $type`nSource: $source`nTest: $testName`nDescription: $testDescription`nDetails: $details"
+                        
+                        # Output as Azure DevOps error annotation (shows in PR checks)
+                        Write-Host "##[error]$errorMessage"
+                        Write-Host "##[debug]Error Details: $errorDetails"
+                    } elseif ($row -is [String]) {
+                        # Handle unexpected single string rows
+                        Write-Host "##[error]Test Failure: $row"
+                    } else {
+                        # Handle unexpected row formats
+                        Write-Host "##[warning]Unexpected row format: $($row | ConvertTo-Json -Compress)"
+                    }
+                }
+                
+                # =============================================================================
+                # PIPELINE FAILURE: STOP PR IF TEST FAILURES FOUND
+                # =============================================================================
+                Write-Host "##[error]Pipeline failed due to $($table.Rows.Count) test failures in the source branch"
+                exit 1  # Exit with error code to fail the pipeline
+            } else {
+                # No test failures found - allow PR to continue
+                Write-Host "##[section]No test failures found for this PR - pipeline will continue"
+            }
+        } else {
+            # No data returned from query - allow PR to continue
+            Write-Host "##[section]No data returned from query - pipeline will continue"
+        }
+
+    # =============================================================================
+    # ENVIRONMENT VARIABLES FOR POWERSHELL SCRIPT
+    # =============================================================================
+    env:
+      CLIENT_SECRET: $(CLIENT_SECRET)  # Service Principal secret (sensitive)
+      ADO_TOKEN: $(ADO_TOKEN)         # Azure DevOps Personal Access Token for REST API

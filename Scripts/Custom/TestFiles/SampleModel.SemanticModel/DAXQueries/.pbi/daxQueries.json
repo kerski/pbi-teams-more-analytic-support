@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "tabOrder": [
+    "Sample.Tests",
+    "Column.Tests",
+    "Measure.Tests",
+    "Example.Tests",
+    "Table.Tests",
+    "Schema.Tests",
+    "Schema Query Example - View"
+  ],
+  "defaultTab": "Sample.Tests"
+}

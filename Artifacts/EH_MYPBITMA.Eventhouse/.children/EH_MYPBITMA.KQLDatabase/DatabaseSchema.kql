@@ -1,0 +1,434 @@
+// KQL script
+// Use management commands in this script to configure your database items, such as tables, functions, materialized views, and more.
+
+
+.create-merge table pbir_inspector_bronze (Id:string, TestedFilePath:string, RulesFilePath:string, CompletionTime:string, Verbose:bool, Results:dynamic, RepositoryId:string, BranchName:string, LogicalId:string, CommitId:string, CommittedBy:string, Timestamp:string, ReportName:string) 
+.create-merge table tabular_editor_bronze (RepositoryId:string, BranchName:string, Timestamp:string, CommitId:string, CommittedBy:string, LogicalId:string, Results:string, SemanticModelName:string, TmdlFileName:string) 
+.create-merge table pq_lint_bronze (RepositoryId:string, BranchName:string, Timestamp:string, CommitId:string, CommittedBy:string, LogicalId:string, Results:dynamic, SemanticModelName:string, TmdlFileName:string) 
+.create-merge table pq_lint_tests_silver (Id:long, BusinessKey:string, Name:string, Description:string, Source:string) 
+.create-merge table pbir_inspector_tests_silver (Id:long, BusinessKey:string, Name:string, Description:string, Source:string) 
+.create-merge table tabular_editor_tests_silver (Id:long, BusinessKey:string, Name:string, Description:string, Source:string) 
+.create-merge table tests_silver_combined (Id:long, BusinessKey:string, Name:string, Description:string, Source:string) 
+.create-merge table tabular_editor_commits_silver (RepositoryId:string, CommitId:string, CommittedBy:string, BranchName:string, LogicalId:string, ArtifactName:string, Type:string, Date:datetime) 
+.create-merge table pbir_inspector_commits_silver (RepositoryId:string, CommitId:string, CommittedBy:string, BranchName:string, LogicalId:string, ArtifactName:string, Type:string, Date:datetime) 
+.create-merge table pq_lint_commits_silver (RepositoryId:string, CommitId:string, CommittedBy:string, BranchName:string, LogicalId:string, ArtifactName:string, Type:string, Date:datetime) 
+.create-merge table commits_silver_combined (Id:long, RepositoryId:string, CommitId:string, CommittedBy:string, BranchName:string, LogicalId:string, ArtifactName:string, Type:string, Date:datetime) 
+.create-merge table pbir_inspector_test_results_silver (Id:long, CommitsId:long, TestsId:long, SeverityId:int, Actual:string, Expected:string, Details:string, Passed:int, Date:datetime, Time:timespan) 
+.create-merge table tabular_editor_test_results_silver (Id:long, CommitsId:long, TestsId:long, SeverityId:int, Actual:string, Expected:string, Details:string, Passed:int, Date:datetime, Time:timespan) 
+.create-merge table pq_lint_test_results_silver (Id:long, CommitsId:long, TestsId:long, SeverityId:int, Actual:string, Expected:string, Details:string, Passed:int, Date:datetime, Time:timespan) 
+.create-merge table test_results_silver_combined (Id:long, CommitsId:long, TestsId:long, SeverityId:int, Actual:string, Expected:string, Details:string, Passed:int, Date:datetime, Time:timespan) 
+.create-or-alter function with (folder = "Bronze to Silver", docstring = "Add PQLint Tests", skipvalidation = "true") fnParsePQLintTest() {
+    pq_lint_bronze
+    | extend raw = todynamic(Results)                           // safe parse; null on bad JSON
+    | extend jsonData = case(
+        isnotnull(array_length(raw)), raw,                      // already an array
+        isnull(raw), dynamic([]),                               // bad/empty JSON → empty array (skip)
+        pack_array(raw)                                         // single object → wrap into array
+    )
+    | mv-expand element = jsonData
+    | where isnotnull(element) and not(isnull(element.ID))                                   // drop any nulls
+    | project 
+        ID = element.ID,
+        Name = tostring(element.Name),
+        Description = tostring(element.Description)
+    | extend 
+        BusinessKey = strcat('PQLINT_',ID),
+        Source = 'PQ Lint'
+    | project 
+        Id = hash(BusinessKey),
+        BusinessKey,
+        Name,
+        Description,
+        Source
+}
+.create-or-alter function with (folder = "Bronze to Silver", docstring = "Add PBIR Inspector Tests", skipvalidation = "true") fnParsePBIRInspectorTest() {
+    pbir_inspector_bronze
+    | extend jsonData = parse_json(Results)   // Convert to dynamic (JSON object/array)
+    | mv-expand element = jsonData             // Split array into one row per element
+    | project 
+        BusinessKey = strcat('PBIRInspector_',tostring(element.RuleId)),
+        Name        = tostring(element.RuleName),
+        Description = tostring(element.RuleDescription),
+        Source      = "PBIR Inspector"
+    | project 
+        Id = hash(BusinessKey),
+        BusinessKey,
+        Name,
+        Description,
+        Source
+}
+.create-or-alter function with (folder = "Combined", skipvalidation = "true") fnPQLintToCombined() {
+    pq_lint_tests_silver
+    | project 
+        Id,
+        BusinessKey,
+        Name,
+        Description,
+        Source = "PQ Lint"
+    | distinct Id, BusinessKey, Name, Description, Source
+}
+.create-or-alter function with (folder = "Combined", skipvalidation = "true") fnPBIRInspectorToCombined() {
+    pbir_inspector_tests_silver
+    | project 
+        Id,
+        BusinessKey,
+        Name,
+        Description,
+        Source = "PBIR Inspector"
+    | distinct Id, BusinessKey, Name, Description, Source
+}
+.create-or-alter function with (folder = "Bronze to Silver", docstring = "Add Commit from PBIR Inspector", skipvalidation = "true") fnParsePBIRInspectorCommit() {
+    pbir_inspector_bronze
+    | project 
+        RepositoryId,
+        CommitId,
+        CommittedBy,
+        BranchName,
+        ReportName,
+        LogicalId,
+        Timestamp
+    | extend 
+        ArtifactName = ReportName,
+        Type = 'Report',
+        TSYear = toint(substring(Timestamp, 0, 4)),
+        TSMonth = toint(substring(Timestamp, 4, 2)),
+        TSDay = toint(substring(Timestamp, 6, 2)),
+        TSHour = toint(substring(Timestamp, 9, 2)),
+        TSMinute = toint(substring(Timestamp, 11, 2)),
+        TSSecond = toint(substring(Timestamp, 13, 2))        
+    | project 
+        RepositoryId,
+        CommitId,
+        CommittedBy,
+        BranchName,
+        LogicalId,
+        ArtifactName,
+        Type,
+        Date = todatetime(strcat(TSYear,'-',TSMonth,'-',TSDay,' 00:00:00Z'))
+}
+.create-or-alter function with (folder = "Bronze to Silver", docstring = "Add Commit from PQ Lint", skipvalidation = "true") fnParsePQLintCommit() {
+    pq_lint_bronze 
+    | project 
+        RepositoryId,
+        CommitId,
+        CommittedBy,
+        BranchName,
+        SemanticModelName,
+        LogicalId,
+        Timestamp
+    | extend 
+        ArtifactName = SemanticModelName,
+        Type = 'Semantic Model',
+        TSYear = toint(substring(Timestamp, 0, 4)),
+        TSMonth = toint(substring(Timestamp, 4, 2)),
+        TSDay = toint(substring(Timestamp, 6, 2)),
+        TSHour = toint(substring(Timestamp, 9, 2)),
+        TSMinute = toint(substring(Timestamp, 11, 2)),
+        TSSecond = toint(substring(Timestamp, 13, 2))   
+    | project 
+        RepositoryId,
+        CommitId,
+        CommittedBy,
+        BranchName,
+        LogicalId,
+        ArtifactName,
+        Type,
+        Date = todatetime(strcat(TSYear,'-',TSMonth,'-',TSDay,' 00:00:00Z'))
+}
+.create-or-alter function with (folder = "Combined Commits", skipvalidation = "true") fnPQLintCommitsToCombined() {
+    pq_lint_commits_silver
+    | project 
+        Id = hash(strcat(RepositoryId,CommitId,BranchName,LogicalId,ArtifactName,Type)),
+        RepositoryId,
+        CommitId,
+        CommittedBy,
+        BranchName,
+        LogicalId,
+        ArtifactName,
+        Type,
+        Date
+    | distinct Id, RepositoryId, CommitId,  CommittedBy, BranchName, LogicalId, ArtifactName, Type, Date
+}
+.create-or-alter function with (folder = "Combined Commits", skipvalidation = "true") fnPBIRInspectorCommitsToCombined() {
+    pbir_inspector_commits_silver
+    | project 
+        Id = hash(strcat(RepositoryId,CommitId,BranchName,LogicalId,ArtifactName,Type)),
+        RepositoryId,
+        CommitId,
+        CommittedBy,
+        BranchName,
+        LogicalId,
+        ArtifactName,
+        Type,
+        Date
+    | distinct Id, RepositoryId, CommitId,  CommittedBy, BranchName, LogicalId, ArtifactName, Type, Date
+}
+.create-or-alter function with (folder = "Bronze to Silver", docstring = "Add Test Results from PBIR Inspector", skipvalidation = "true") fnParsePBIRInspectorTestResults() {
+pbir_inspector_bronze
+| extend jsonData = parse_json(Results)   // Convert to dynamic (JSON object/array)
+| mv-expand element = jsonData             // Split array into one row per element
+| project 
+    CommitsId = hash(strcat(RepositoryId, CommitId, BranchName, LogicalId, ReportName, 'Report')),
+    TestsId = hash(strcat('PBIRInspector_', tostring(element.RuleId))),
+    // 1 is warning, 2 is Error, and else we do 1 as informational
+    SeverityId = toint(case(tostring(element.LogType) == '0', 3, tostring(element.LogType) == '1', 2, 1)),
+    Expected = tostring(element.Expected),
+    Actual = tostring(element.Actual),
+    Details = strcat(element.ItemPath, ': ',element.Message),
+    Passed = toint(case(tostring(element.Pass) == 'true', 1, 0)),
+    TSYear = toint(substring(Timestamp, 0, 4)),
+    TSMonth = toint(substring(Timestamp, 4, 2)),
+    TSDay = toint(substring(Timestamp, 6, 2)),
+    TSHour = toint(substring(Timestamp, 9, 2)),
+    TSMinute = toint(substring(Timestamp, 11, 2)),
+    TSSecond = toint(substring(Timestamp, 13, 2))
+| extend 
+    Date = todatetime(strcat(TSYear,'-',TSMonth,'-',TSDay,' 00:00:00Z')),
+    Time = totimespan(strcat(TSHour, ":", TSMinute, ":", TSSecond))
+| project
+    Id = hash(strcat(CommitsId, TestsId, tostring(Date), tostring(Time))),
+    CommitsId,
+    TestsId,
+    SeverityId,
+    Actual,
+    Expected,
+    Details,
+    Passed,
+    Date,
+    Time
+}
+.create-or-alter function with (folder = "Bronze to Silver", docstring = "Add Test Results from PQ Lint", skipvalidation = "true") fnParsePQLintTestResults() {
+    pq_lint_bronze
+    | extend raw = todynamic(Results)                           // safe parse; null on bad JSON
+    | extend jsonData = case(
+        isnotnull(array_length(raw)), raw,                      // already an array
+        isnull(raw), dynamic([]),                               // bad/empty JSON → empty array (skip)
+        pack_array(raw)                                         // single object → wrap into array
+    )
+    | mv-expand element = jsonData
+    | where element != '{}'                                   // drop any nulls
+    | project 
+    CommitsId = hash(strcat(RepositoryId, CommitId, BranchName, LogicalId, SemanticModelName, 'Semantic Model')),
+    TestsId = hash(strcat('PQLINT_',element.ID)),
+    // 1 is warning, 2 is Error, and else we do 1 as informational
+    SeverityId = toint(element.Severity),
+    Expected = tostring('Pass'),
+    Actual = iff(element.Passed == 'true','Pass','Fail'),
+    Details = '',
+    Passed = toint(iff(element.Passed == 'true',1,0)),
+    TSYear = toint(substring(Timestamp, 0, 4)),
+    TSMonth = toint(substring(Timestamp, 4, 2)),
+    TSDay = toint(substring(Timestamp, 6, 2)),
+    TSHour = toint(substring(Timestamp, 9, 2)),
+    TSMinute = toint(substring(Timestamp, 11, 2)),
+    TSSecond = toint(substring(Timestamp, 13, 2)),
+    TmdlFileName
+| extend 
+    Date = todatetime(strcat(TSYear,'-',TSMonth,'-',TSDay,' 00:00:00Z')),
+    Time = totimespan(strcat(TSHour, ":", TSMinute, ":", TSSecond))
+| project
+    Id = hash(strcat(CommitsId, TestsId, tostring(Date), tostring(Time))),
+    CommitsId,
+    TestsId,
+    SeverityId,
+    Actual,
+    Expected,
+    Details = TmdlFileName,
+    Passed,
+    Date,
+    Time
+}
+.create-or-alter function with (folder = "Combined Test Results", skipvalidation = "true") fnPQLintTestResultsToCombined() {
+    pq_lint_test_results_silver
+    | distinct Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, Date, Time
+}
+.create-or-alter function with (folder = "Combined Test Results", skipvalidation = "true") fnPBIRInspectorTestResultsToCombined() {
+    pbir_inspector_test_results_silver
+    | distinct Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, Date, Time
+}
+.create-or-alter function with (folder = "Bronze to Silver", docstring = "Add Tabular Editor Tests", skipvalidation = "true") fnParseTabularEditorTest() {
+    tabular_editor_bronze
+    | extend CleanXml = replace(@"<?xml version=""1.0"" encoding=""utf-8""?>", "", tostring(Results))
+    | extend parsed = parse_xml(CleanXml)
+    | extend TestDefinitions = parsed.TestRun.TestDefinitions.UnitTest
+    | mv-expand TestDefinitions
+    | extend
+        UnitTestId = tostring(TestDefinitions['@id']),
+        UnitTestName = tostring(TestDefinitions['@name']),
+        Properties = TestDefinitions.Properties.Property
+    | mv-expand Properties
+    | extend
+        Key = tostring(Properties.Key),
+        Value = tostring(Properties.Value)
+    | where Key in ('RuleID', 'Description')
+    | summarize PropertiesMap = make_bag(pack(Key, Value)) by UnitTestId, UnitTestName
+    | extend 
+        BusinessKey = strcat('TabularEditor_',PropertiesMap.RuleID)
+    | project Id = hash(BusinessKey), BusinessKey, Name = tostring(UnitTestName), Description = tostring(PropertiesMap.Description), Source = 'Tabular Editor'
+}
+.create-or-alter function with (folder = "Bronze to Silver", docstring = "Add Commit from Tabular Editor", skipvalidation = "true") fnParseTabularEditorCommit() {
+    tabular_editor_bronze
+    | project 
+        RepositoryId,
+        CommitId,
+        CommittedBy,
+        BranchName,
+        SemanticModelName,
+        LogicalId,
+        Timestamp
+    | extend 
+        ArtifactName =SemanticModelName,
+        Type = 'Semantic Model',
+        TSYear = toint(substring(Timestamp, 0, 4)),
+        TSMonth = toint(substring(Timestamp, 4, 2)),
+        TSDay = toint(substring(Timestamp, 6, 2)),
+        TSHour = toint(substring(Timestamp, 9, 2)),
+        TSMinute = toint(substring(Timestamp, 11, 2)),
+        TSSecond = toint(substring(Timestamp, 13, 2))        
+    | project 
+        RepositoryId,
+        CommitId,
+        CommittedBy,
+        BranchName,
+        LogicalId,
+        ArtifactName,
+        Type,
+        Date = todatetime(strcat(TSYear,'-',TSMonth,'-',TSDay,' 00:00:00Z'))
+}
+.create-or-alter function with (folder = "Combined", skipvalidation = "true") fnTabularEditorToCombined() {
+   tabular_editor_tests_silver
+    | project 
+        Id,
+        BusinessKey,
+        Name,
+        Description,
+        Source = "Tabular Editor"
+    | distinct Id, BusinessKey, Name, Description, Source
+}
+.create-or-alter function with (folder = "Combined Commits", skipvalidation = "true") fnTabularEditorCommitsToCombined() {
+    tabular_editor_commits_silver
+    | project 
+        Id = hash(strcat(RepositoryId,CommitId,BranchName,LogicalId,ArtifactName,Type)),
+        RepositoryId,
+        CommitId,
+        CommittedBy,        
+        BranchName,
+        LogicalId,
+        ArtifactName,
+        Type,
+        Date
+    | distinct Id, RepositoryId, CommitId,  CommittedBy, BranchName, LogicalId, ArtifactName, Type, Date
+}
+.create-or-alter function with (folder = "Bronze to Silver", docstring = "Add Test Results from Tabular Editor", skipvalidation = "true") fnParseTabularEditorTestResults() {
+    // ---- Test Definitions ----
+    let Definitions = 
+    tabular_editor_bronze
+    | extend CleanXml = replace(@"<?xml version=""1.0"" encoding=""utf-8""?>", "", tostring(Results))
+    | extend parsed = parse_xml(CleanXml)
+    | extend TestDefinitions = parsed.TestRun.TestDefinitions.UnitTest
+    | mv-expand TestDefinitions
+    | extend
+        UnitTestId = tostring(TestDefinitions['@id']),
+        UnitTestName = tostring(TestDefinitions['@name']),
+        Properties = TestDefinitions.Properties.Property
+    | mv-expand Properties
+    | extend
+        Key = tostring(Properties.Key),
+        Value = tostring(Properties.Value)
+    | where Key in ('RuleID', 'Description','Severity')
+    | summarize PropertiesMap = make_bag(pack(Key, Value)) by UnitTestId, UnitTestName
+    | extend 
+        BusinessKey = strcat('TabularEditor_', PropertiesMap.RuleID),
+        Severity = PropertiesMap.Severity
+    | project 
+        UnitTestId,
+        TestId = hash(BusinessKey),
+        BusinessKey,
+        Name = UnitTestName,
+        Description = PropertiesMap.Description,
+        Severity,
+        Source = 'Tabular Editor';
+    // ---- Test Entries ----
+    let TestEntries =
+    tabular_editor_bronze
+    | extend CleanXml = replace(@"<?xml version=""1.0"" encoding=""utf-8""?>", "", tostring(Results))
+    | extend parsed = parse_xml(CleanXml)
+    | extend TestEntries = parsed.TestRun.TestEntries
+    | mv-expand TestEntries
+    | mv-expand TestEntries.TestEntry
+    | project     
+        UnitTestId = tostring(TestEntries_TestEntry['@testId']),
+        ExecutionId = tostring(TestEntries_TestEntry['@executionId']);
+    // ---- Test Results ----
+    let Results =
+    tabular_editor_bronze
+    | extend CleanXml = replace(@"<?xml version=""1.0"" encoding=""utf-8""?>", "", tostring(Results))
+    | extend parsed = parse_xml(CleanXml),
+        TSYear = toint(substring(Timestamp, 0, 4)),
+        TSMonth = toint(substring(Timestamp, 4, 2)),
+        TSDay = toint(substring(Timestamp, 6, 2)),
+        TSHour = toint(substring(Timestamp, 9, 2)),
+        TSMinute = toint(substring(Timestamp, 11, 2)),
+        TSSecond = toint(substring(Timestamp, 13, 2))
+    | extend 
+        CommitsId = hash(strcat(RepositoryId, CommitId, BranchName, LogicalId, SemanticModelName, 'Semantic Model')),
+        Date = todatetime(strcat(TSYear,'-',TSMonth,'-',TSDay,' 00:00:00Z')),
+        Time = totimespan(strcat(TSHour, ":", TSMinute, ":", TSSecond))
+    | extend TestResults = parsed.TestRun.Results.UnitTestResult
+    | mv-expand TestResults
+    | mv-expand TestResults.Output
+    | extend
+        UnitTestId = tostring(TestResults['@testId']),
+        Outcome = tostring(TestResults['@outcome']),
+        TestName = tostring(TestResults['@testName']),
+        Message = TestResults_Output.ErrorInfo.Message,
+        StackTrace = TestResults_Output.ErrorInfo.StackTrace,
+        ExecutionId = tostring(TestResults['@executionId'])
+    | project 
+        ExecutionId,
+        CommitsId,
+        UnitTestId,
+        Actual = Outcome,
+        Expected = 'Passed',
+        Details = strcat(Message, '. ', StackTrace),
+        Passed = toint(iff(Outcome == 'Passed', 1, 0)),
+        Date,
+        Time;
+    // ---- Join Definitions with Results ----
+    Results
+    | join kind=inner TestEntries on $left.ExecutionId == $right.ExecutionId and $left.UnitTestId == $right.UnitTestId
+    | join kind=inner Definitions on $left.UnitTestId == $right.UnitTestId
+    | project 
+        Id = hash(strcat(ExecutionId, tostring(Date), tostring(Time))), 
+        CommitsId, 
+        TestsId = TestId,
+        SeverityId = toint(Severity), 
+        Actual,
+        Expected,
+        Details,
+        Passed,
+        Date, 
+        Time
+}
+.create-or-alter function with (folder = "Combined Test Results", skipvalidation = "true") fnTabularEditorTestResultsToCombined() {
+    tabular_editor_test_results_silver
+    | distinct Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, Date, Time
+}
+.create-or-alter materialized-view  TestResults on table test_results_silver_combined { test_results_silver_combined
+    | summarize take_any(*) by Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, Date, Time }
+.create-or-alter materialized-view  Tests on table tests_silver_combined { tests_silver_combined
+    | summarize take_any(*) by Id, BusinessKey, Name, Description, Source }
+.create-or-alter materialized-view  Commits on table commits_silver_combined { commits_silver_combined
+    | summarize take_any(*) by Id, RepositoryId, CommitId,  CommittedBy, BranchName, LogicalId, ArtifactName, Type, Date }
+.alter table pq_lint_tests_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_bronze\",\"Query\":\"fnParsePQLintTest\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table pbir_inspector_tests_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pbir_inspector_bronze\",\"Query\":\"fnParsePBIRInspectorTest\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table tabular_editor_tests_silver policy update "[{\"IsEnabled\":true,\"Source\":\"tabular_editor_bronze\",\"Query\":\"fnParseTabularEditorTest\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table tests_silver_combined policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_tests_silver\",\"Query\":\"fnPQLintToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"pbir_inspector_tests_silver\",\"Query\":\"fnPBIRInspectorToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"tabular_editor_tests_silver\",\"Query\":\"fnTabularEditorToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table tabular_editor_commits_silver policy update "[{\"IsEnabled\":true,\"Source\":\"tabular_editor_bronze\",\"Query\":\"fnParseTabularEditorCommit()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table pbir_inspector_commits_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pbir_inspector_bronze\",\"Query\":\"fnParsePBIRInspectorCommit()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table pq_lint_commits_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_bronze\",\"Query\":\"fnParsePQLintCommit()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table commits_silver_combined policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_commits_silver\",\"Query\":\"fnPQLintCommitsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"pbir_inspector_commits_silver\",\"Query\":\"fnPBIRInspectorCommitsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"tabular_editor_commits_silver\",\"Query\":\"fnTabularEditorCommitsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table pbir_inspector_test_results_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pbir_inspector_bronze\",\"Query\":\"fnParsePBIRInspectorTestResults()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table tabular_editor_test_results_silver policy update "[{\"IsEnabled\":true,\"Source\":\"tabular_editor_bronze\",\"Query\":\"fnParseTabularEditorTestResults()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table pq_lint_test_results_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_bronze\",\"Query\":\"fnParsePQLintTestResults()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table test_results_silver_combined policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_test_results_silver\",\"Query\":\"fnPQLintTestResultsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"pbir_inspector_test_results_silver\",\"Query\":\"fnPBIRInspectorTestResultsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"tabular_editor_test_results_silver\",\"Query\":\"fnTabularEditorTestResultsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"

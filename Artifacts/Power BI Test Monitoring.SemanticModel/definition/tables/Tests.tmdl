@@ -1,0 +1,63 @@
+table Tests
+	lineageTag: cf4d32df-dd3a-4d9c-b30e-2304324bb74c
+
+	column Id
+		dataType: int64
+		isKey
+		formatString: 0
+		sourceProviderType: bigint
+		lineageTag: e1a5067f-dcdc-47ea-8904-13f6e0953a84
+		summarizeBy: none
+		sourceColumn: Id
+
+		annotation SummarizationSetBy = Automatic
+
+	column BusinessKey
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: 6c648d6a-c5f0-44bc-a5c1-283f9dd6324b
+		summarizeBy: none
+		sourceColumn: BusinessKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column Name
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: ba9b04f2-c076-43a7-b82d-b45a0bc47fec
+		summarizeBy: none
+		sourceColumn: Name
+
+		annotation SummarizationSetBy = Automatic
+
+	column Description
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: c36acf43-9f8b-4000-94bd-42ce3115bc03
+		summarizeBy: none
+		sourceColumn: Description
+
+		annotation SummarizationSetBy = Automatic
+
+	column Source
+		dataType: string
+		sourceProviderType: nvarchar(max)
+		lineageTag: 463dfbe0-9bb7-4aca-9bfb-7d632d20eca2
+		summarizeBy: none
+		sourceColumn: Source
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Tests = m
+		mode: directQuery
+		queryGroup: KQL
+		source =
+				let
+				    Source = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "Tests", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null])
+				in
+				    Source
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Table
+

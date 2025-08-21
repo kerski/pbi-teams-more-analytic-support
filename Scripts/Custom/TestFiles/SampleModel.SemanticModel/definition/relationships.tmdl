@@ -1,0 +1,12 @@
+relationship c536afe1-3f60-4922-8aaa-c9e5754c7744
+	fromColumn: MarvelFact.DateID
+	toColumn: DateDim.DateID
+
+relationship 99b81a18-76e8-4806-a3e6-d8ab605cc07a
+	fromColumn: MarvelFact.EyeID
+	toColumn: EyeColorDim.EyeID
+
+relationship 56999b72-f4f6-442c-9f2d-65422acff5af
+	fromColumn: MarvelFact.AlignmentID
+	toColumn: AlignmentDim.AlignmentID
+

@@ -1,0 +1,299 @@
+# =============================================================================
+# Pipeline-Triggered: PQLint Analysis Pipeline
+# =============================================================================
+# This pipeline is triggered by the PBIP-CI pipeline and runs PQLint API analysis
+# on TMDL files from semantic models, then ingests results into Eventhouse.
+#
+# Prerequisites:
+# - PQLint API subscription key for code analysis
+# - Service Principal with access to Eventhouse/Kusto cluster
+# - Variable group 'MYPBITMA-EVENTHOUSE' with required secrets
+# - ADO_TOKEN with repository read permissions for REST API calls
+# - Custom PowerShell modules for Eventhouse ingestion and PQLint API
+# =============================================================================
+
+# Trigger Configuration
+# Only triggered by other pipelines, not by code changes
+trigger: none
+
+# Pipeline Variables
+# Reference to variable group containing sensitive environment variables
+variables:
+  - group: MYPBITMA-EVENTHOUSE  # Contains: CLIENT_ID, CLIENT_SECRET, TENANT_ID, CLUSTER_URL, DATABASE, PQLINT_SUBSCRIPTION_KEY, ADO_TOKEN
+
+# =============================================================================
+# PIPELINE RESOURCES
+# =============================================================================
+# Define dependency on upstream pipeline that provides artifacts
+resources:
+  pipelines:
+    - pipeline: test-trigger      # Internal reference name
+      source: PBIP-CI            # Source pipeline name
+      project: PBI-Test          # Source project name
+      trigger:                   # Trigger conditions
+        branches:
+          include:
+            - '*'                # Trigger on any branch
+
+# =============================================================================
+# JOBS SECTION
+# =============================================================================
+jobs:
+  - job: TriggeredBuild
+    displayName: 'PQLint Analysis'
+    workspace:
+      clean: all                 # Clean workspace before starting
+    pool:
+      vmImage: 'ubuntu-latest'   # Use Linux agent for cross-platform compatibility
+
+    steps:
+      # =============================================================================
+      # STEP 1: SOURCE CODE CHECKOUT
+      # =============================================================================
+      - checkout: self
+        displayName: 'Checkout Repository'
+        persistCredentials: true  # Keep credentials for potential git operations
+        fetchDepth: 0            # Fetch full git history
+
+      # =============================================================================
+      # STEP 2: DOWNLOAD ARTIFACTS FROM UPSTREAM PIPELINE
+      # =============================================================================
+      # Download semantic models from the triggering pipeline
+      - task: DownloadBuildArtifacts@1
+        displayName: 'Download Artifacts'
+        inputs:
+          buildType: 'specific'                           # Download from specific pipeline
+          project: 'PBI-Test'                            # Source project name
+          pipeline: '$(UPSTREAM_PIPELINE_ID)'            # ID of the pipeline that publishes artifacts
+          runVersion: 'latest'                           # Use latest successful run
+          artifactName: 'CombinedModels'                 # Name of artifact to download
+          targetPath: '$(Pipeline.Workspace)/CombinedModels'  # Local download path
+          itemPattern: CombinedModels/**                 # Pattern to match artifact contents
+
+      # =============================================================================
+      # STEP 3: MAIN PQLINT ANALYSIS AND INGESTION LOGIC
+      # =============================================================================
+      - task: PowerShell@2
+        displayName: 'Run PQLint Analysis'
+        inputs:
+          targetType: 'inline'
+          script: |
+            # =============================================================================
+            # ENVIRONMENT VARIABLES SETUP
+            # =============================================================================
+            # Load authentication and connection details from pipeline variables
+            $clientId = "${env:CLIENT_ID}"              # Service Principal Client ID
+            $clientSecret = "${env:CLIENT_SECRET}"      # Service Principal Secret
+            $tenantId = "${env:TENANT_ID}"              # Azure AD Tenant ID
+            $clusterUrl = "${env:CLUSTER_URL}"          # Eventhouse cluster endpoint URL
+            $database = "${env:DATABASE}"               # Eventhouse database name
+            $pqlintTable = "pq_lint_bronze"             # Target table name
+            $subscriptionKey = "${env:PQLINT_SUBSCRIPTION_KEY}"  # PQLint API subscription key
+
+            # =============================================================================
+            # MODULE IMPORTS
+            # =============================================================================
+            # Import custom modules for Eventhouse ingestion and PQLint API operations
+            Import-Module -Name "./Scripts/Custom/Invoke-FabricJsonIngestion.psm1" -Force 
+            Import-Module -Name "./Scripts/Custom/PQLintAPI.psm1" -Force 
+
+            # =============================================================================
+            # ARTIFACT PATH SETUP
+            # =============================================================================
+            # Define the path to downloaded semantic models
+            $CombinedModelsPath = "$(Pipeline.Workspace)/a/CombinedModels"
+            Write-Host "##[debug]Combined Models Path: $CombinedModelsPath"
+
+            # Find all *.SemanticModel folders recursively in the downloaded artifacts
+            $semanticModelFolders = Get-ChildItem -Path $CombinedModelsPath -Directory -Recurse | Where-Object { $_.Name -like "*.SemanticModel" }
+            
+            # Get current timestamp for unique file naming and tracking
+            $currentTime = [DateTime]::UtcNow.ToString('yyyyMMdd_HHmmss')
+
+            # =============================================================================
+            # PROCESS EACH SEMANTIC MODEL
+            # =============================================================================
+            foreach ($folder in $semanticModelFolders) {
+                Write-Host "##[debug]Processing: $($folder.FullName)"
+                
+                # =============================================================================
+                # EXTRACT METADATA FROM FOLDER PATH
+                # =============================================================================
+                # Parse folder path to extract workspace, repository, branch, and commit info
+                # Expected format: workspace~repositoryId~branchName~commitId
+                $tempSplit = ($folder.FullName -split "~")
+                if ($tempSplit.Length -lt 4) {
+                    Write-Warning "Skipping folder with invalid path format: $($folder.FullName)"
+                    continue
+                }
+                
+                $workspaceName = $tempSplit[$tempSplit.Length - 4]    # Workspace name
+                $repositoryId = $tempSplit[$tempSplit.Length - 3]     # Repository GUID
+                $branchName = $tempSplit[$tempSplit.Length - 2]       # Branch name
+                $commitId = ($tempSplit[$tempSplit.Length - 1] -split "/")[0]  # Commit SHA (Linux path separator)
+
+                Write-Host "##[debug]Workspace: $workspaceName, Repo: $repositoryId, Branch: $branchName, Commit: $commitId"
+                
+                # =============================================================================
+                # AZURE DEVOPS REST API: GET COMMIT INFORMATION
+                # =============================================================================
+                # Query Azure DevOps REST API to get detailed commit information
+                $org = "$(System.TeamFoundationCollectionUri)"       # Organization URL
+                $token = $env:ADO_TOKEN                              # Access token
+                $currentProject = "$(System.TeamProject)"           # Current project name
+                $apiUrl = "$($org)$($currentProject)/_apis/git/repositories/$($repositoryId)/commits/$($commitId)?api-version=7.2-preview.1"
+
+                Write-Host "##[debug]API Call: $apiUrl"
+
+                # Execute REST API call to get commit details
+                $commitInfo = Invoke-RestMethod -Uri $apiUrl -Verbose -Headers @{
+                    Authorization = "Bearer $token"
+                }
+                
+                # Log commit information for debugging and tracking
+                Write-Host "##[debug]Found commit: $($commitInfo.commitId)"
+                Write-Host "##[debug]Commit author: $($commitInfo.author.name)"
+                Write-Host "##[debug]Commit message: $($commitInfo.comment)"
+
+                # Extract committer email for tracking purposes
+                $committerEmail = $commitInfo.author.email
+                Write-Host "##[debug]Committer email: $committerEmail"
+
+                # =============================================================================
+                # VALIDATE SEMANTIC MODEL STRUCTURE
+                # =============================================================================
+                # Ensure the .platform file exists (required for semantic models)
+                $platformFile = "$($folder.FullName)/.platform"
+                if (!(Test-Path -LiteralPath $platformFile)) {
+                    Write-Warning "Skipping - .platform file not found: $($folder.FullName)"
+                    continue
+                }
+
+                # =============================================================================
+                # READ SEMANTIC MODEL METADATA
+                # =============================================================================
+                # Parse .platform file to get semantic model metadata
+                try {
+                    $platformContent = Get-Content -LiteralPath $platformFile -Encoding utf8 | ConvertFrom-Json
+                    $semanticModelName = $platformContent.metadata.displayName  # Model display name
+                    $logicalId = $platformContent.config.logicalId              # Unique logical identifier
+                }
+                catch {
+                    Write-Warning "Skipping - invalid .platform file: $($folder.FullName)"
+                    continue
+                }
+                
+                # Define output path for PQLint results
+                $outputFilePath = "./PQLintTests/$($repositoryId)/$($branchName)/$($logicalId)~$($commitId)~$($currentTime)"
+                Write-Host "##[debug]Output path: $outputFilePath"
+
+                # =============================================================================
+                # FIND AND VALIDATE TMDL FILES
+                # =============================================================================
+                # Get all TMDL files in the semantic model directory
+                $tmdlFiles = Get-ChildItem -Path $($folder.FullName) -Filter "*.tmdl" -File -Recurse
+                if ($tmdlFiles.Count -eq 0) {
+                    Write-Warning "No TMDL files found in: $($folder.FullName)"
+                    continue
+                }
+               
+                # =============================================================================
+                # PROCESS EACH TMDL FILE WITH PQLINT
+                # =============================================================================
+                foreach ($tmdlFile in $tmdlFiles) {
+                    Write-Host "##[debug]Processing TMDL: $($tmdlFile.FullName)"
+                    Write-Host "Running PQLint on $($tmdlFile.Name) in $($semanticModelName)"
+                    
+                    try {
+                        # =============================================================================
+                        # PQLINT API ANALYSIS
+                        # =============================================================================
+                        # Read TMDL file content and run PQLint analysis
+                        $fileContent = Get-Content -Path $tmdlFile.FullName -Raw -Encoding UTF8
+                        $results = Invoke-CodeLinting -Code $fileContent -SubscriptionKey $subscriptionKey -Format "tmdl" -VerboseOutput $true
+                        
+                        # =============================================================================
+                        # CREATE ENRICHED RESULTS WITH METADATA
+                        # =============================================================================
+                        # Add contextual information to the PQLint results
+                        $enrichedResults = @{
+                            RepositoryId = $repositoryId              # Repository identifier
+                            BranchName = $branchName                  # Source branch name
+                            LogicalId = $logicalId                    # Semantic model logical ID
+                            CommitId = $commitId                      # Commit SHA
+                            CommittedBy = $committerEmail             # Committer email
+                            Timestamp = $currentTime                  # Processing timestamp
+                            SemanticModelName = $semanticModelName    # Model display name
+                            TmdlFileName = $tmdlFile.Name            # Source TMDL file name
+                            Results = $results                        # PQLint analysis results
+                        }
+                        
+                        # =============================================================================
+                        # SAVE RESULTS TO JSON FILE
+                        # =============================================================================
+                        # Create output directory and save enriched results
+                        $resultsFilePath = "$outputFilePath/$($tmdlFile.Name)~$($currentTime).json"
+                        $resultsDirectory = Split-Path -Path $resultsFilePath -Parent
+                        if (!(Test-Path -Path $resultsDirectory)) {
+                            New-Item -ItemType Directory -Path $resultsDirectory -Force | Out-Null
+                        }
+                        $enrichedResults | ConvertTo-Json -Depth 10 | Set-Content -Path $resultsFilePath -Encoding utf8
+                        Write-Host "##[debug]Results saved: $resultsFilePath"
+                    }
+                    catch {
+                        Write-Error "PQLint analysis failed for $($tmdlFile.FullName): $($_.Exception.Message)"
+                        continue
+                    }
+                } # End TMDL files processing
+
+                # =============================================================================
+                # EVENTHOUSE TABLE CREATION AND VALIDATION
+                # =============================================================================
+                # Ensure target table exists in Eventhouse before ingestion (once per folder)
+                $sampleJsonFile = Get-ChildItem -Path $outputFilePath -Recurse -File -Filter "*.json" -ErrorAction SilentlyContinue | Select-Object -First 1
+                if ($sampleJsonFile) {
+                    Write-Host "##[debug]Verifying Eventhouse table"
+                    try {
+                        $tableCreated = Invoke-FabricTableCreation -ClusterUrl $clusterUrl -Database $database -TableName $pqlintTable -JsonFilePath $sampleJsonFile.FullName -TenantId $tenantId -ClientId $clientId -ClientSecret $clientSecret
+                        
+                        if (-not $tableCreated) {
+                            Write-Error "Failed to create/verify PQLint table"
+                            exit 1
+                        }
+                    }
+                    catch {
+                        Write-Error "Table creation failed: $($_.Exception.Message)"
+                        exit 1
+                    }
+                }
+
+                # =============================================================================
+                # BATCH INGESTION TO EVENTHOUSE
+                # =============================================================================
+                # Retrieve all JSON files generated by PQLint analysis and ingest to eventhouse
+                $filesToIngest = Get-ChildItem -Path $outputFilePath -Recurse -File -Filter "*.json" -ErrorAction SilentlyContinue
+                foreach ($tempFile in $filesToIngest) {
+                    Write-Host "##[debug]Ingesting: $($tempFile.Name)"
+                    
+                    try {
+                        # =============================================================================
+                        # DATA INGESTION TO EVENTHOUSE
+                        # =============================================================================
+                        # Ingest PQLint analysis results into Eventhouse table
+                        $ingestCount = Invoke-KustoJsonIngest -ClusterUrl $clusterUrl -Database $database -TableName $pqlintTable -JsonFilePath $tempFile.FullName -ClientId $clientId -ClientSecret $clientSecret -TenantId $tenantId
+                        Write-Host "##[debug]Ingested $ingestCount records from $($tempFile.Name)"
+                    }
+                    catch {
+                        Write-Error "Ingestion failed for $($tempFile.Name): $($_.Exception.Message)"
+                        continue
+                    }
+                } # End ingestion processing
+            } # End semantic model folders processing
+        
+        # =============================================================================
+        # ENVIRONMENT VARIABLES FOR POWERSHELL SCRIPT
+        # =============================================================================
+        env:
+          PQLINT_SUBSCRIPTION_KEY: $(PQLINT_SUBSCRIPTION_KEY)  # PQLint API subscription key (sensitive)
+          CLIENT_SECRET: $(CLIENT_SECRET)                     # Service Principal secret (sensitive)
+          ADO_TOKEN: $(ADO_TOKEN)                            # Azure DevOps Personal Access Token for REST API

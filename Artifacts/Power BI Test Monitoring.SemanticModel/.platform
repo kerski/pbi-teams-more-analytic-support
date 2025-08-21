@@ -1,0 +1,11 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
+  "metadata": {
+    "type": "SemanticModel",
+    "displayName": "Power BI Test Monitoring"
+  },
+  "config": {
+    "version": "2.0",
+    "logicalId": "d97877e2-65d7-4458-91c3-ba7871f7d284"
+  }
+}
