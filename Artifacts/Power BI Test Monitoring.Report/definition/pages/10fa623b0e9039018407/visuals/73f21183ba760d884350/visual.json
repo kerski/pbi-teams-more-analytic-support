@@ -1,13 +1,13 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "73f21183ba760d884350",
   "position": {
-    "x": 10.052414760276974,
-    "y": 149.35016215268647,
+    "x": 33.662679207378318,
+    "y": 67.325358414756636,
     "z": 0,
-    "height": 514.10921202559382,
-    "width": 1269.476378297835,
-    "tabOrder": 0
+    "height": 628.37001187106193,
+    "width": 1211.8564514656196,
+    "tabOrder": 10000
   },
   "visual": {
     "visualType": "tableEx",
@@ -168,20 +168,6 @@
               },
               "queryRef": "Test Results.Expected",
               "nativeQueryRef": "Expected"
-            },
-            {
-              "field": {
-                "Column": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "Test Results"
-                    }
-                  },
-                  "Property": "Passed"
-                }
-              },
-              "queryRef": "Test Results.Passed",
-              "nativeQueryRef": "Passed"
             }
           ]
         }
@@ -211,7 +197,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "11D"
+                  "Value": "8D"
                 }
               }
             },
@@ -226,54 +212,6 @@
         },
         {
           "properties": {
-            "backColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "Conditional": {
-                      "Cases": [
-                        {
-                          "Condition": {
-                            "Comparison": {
-                              "ComparisonKind": 0,
-                              "Left": {
-                                "Aggregation": {
-                                  "Expression": {
-                                    "Column": {
-                                      "Expression": {
-                                        "SourceRef": {
-                                          "Entity": "Test Results"
-                                        }
-                                      },
-                                      "Property": "Status"
-                                    }
-                                  },
-                                  "Function": 3
-                                }
-                              },
-                              "Right": {
-                                "Literal": {
-                                  "Value": "'Failed'"
-                                }
-                              }
-                            },
-                            "Annotations": {
-                              "PowerBI.SQExprEvaluationKind": 1,
-                              "PowerBI.SQExprTextOperatorOption": 2
-                            }
-                          },
-                          "Value": {
-                            "Literal": {
-                              "Value": "'#D51212'"
-                            }
-                          }
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            },
             "fontColor": {
               "solid": {
                 "color": {
@@ -321,6 +259,54 @@
                   }
                 }
               }
+            },
+            "backColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Conditional": {
+                      "Cases": [
+                        {
+                          "Condition": {
+                            "Comparison": {
+                              "ComparisonKind": 0,
+                              "Left": {
+                                "Aggregation": {
+                                  "Expression": {
+                                    "Column": {
+                                      "Expression": {
+                                        "SourceRef": {
+                                          "Entity": "Test Results"
+                                        }
+                                      },
+                                      "Property": "Status"
+                                    }
+                                  },
+                                  "Function": 3
+                                }
+                              },
+                              "Right": {
+                                "Literal": {
+                                  "Value": "'Failed'"
+                                }
+                              }
+                            },
+                            "Annotations": {
+                              "PowerBI.SQExprEvaluationKind": 1,
+                              "PowerBI.SQExprTextOperatorOption": 2
+                            }
+                          },
+                          "Value": {
+                            "Literal": {
+                              "Value": "'#D64550'"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
             }
           },
           "selector": {
@@ -341,7 +327,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "12D"
+                  "Value": "9D"
                 }
               }
             },
@@ -369,6 +355,34 @@
           "selector": {
             "metadata": "Test Results.Id"
           }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "193.11465170240174D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "Test Results.Actual"
+          }
+        },
+        {
+          "properties": {
+            "value": {
+              "expr": {
+                "Literal": {
+                  "Value": "122.74999096807045D"
+                }
+              }
+            }
+          },
+          "selector": {
+            "metadata": "_Measures.Date of Test Run with Time Zone"
+          }
         }
       ],
       "total": [
@@ -383,180 +397,36 @@
             }
           }
         }
+      ],
+      "grid": [
+        {
+          "properties": {
+            "rowPadding": {
+              "expr": {
+                "Literal": {
+                  "Value": "10D"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "stylePreset": [
+        {
+          "properties": {
+            "name": {
+              "expr": {
+                "Literal": {
+                  "Value": "'None'"
+                }
+              }
+            }
+          }
+        }
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "8f50a1ba888225a7b0a6",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Artifact Name"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "29e8c07063cc606011ec",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Branch Name"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "c5f1f17f5bd4b918042b",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Test Results"
-              }
-            },
-            "Property": "Actual"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "0bb98ed439783e756a6b",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Type"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "e0c240d7a907e9d3c318",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Test Results"
-              }
-            },
-            "Property": "Expected"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "040d32f9c3ea26bd00ae",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Test Results"
-              }
-            },
-            "Property": "Passed"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "166d6f9f42953ed6b7a7",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Tests"
-              }
-            },
-            "Property": "Name"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "371cc41d4d5b79b1297b",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Tests"
-              }
-            },
-            "Property": "Source"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "7c4e12b2b0b9b586d5dd",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Date of Test Run with Time Zone"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "2a6d3d9f5d9a2d4d02da",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Test Results"
-              }
-            },
-            "Property": "Id"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "a6df2762b13c4508e253",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Committed By"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "f8e0a0802d23047be196",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Test Results"
-              }
-            },
-            "Property": "Status"
-          }
-        },
-        "type": "Categorical"
-      }
-    ]
   }
 }

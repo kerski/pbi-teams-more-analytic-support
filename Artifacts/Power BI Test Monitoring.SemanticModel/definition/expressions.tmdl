@@ -1,4 +1,4 @@
-expression Eventhouse_Cluster_URL = "https://trd-f2rh96ms24rct48qse.z8.kusto.fabric.microsoft.com" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+expression Eventhouse_Cluster_URL = "https://trd-9b0c3cq3fpaee9xjvq.z4.kusto.fabric.microsoft.com" meta [IsParameterQuery = true, IsParameterQueryRequired = true, Type = "Text"]
 	lineageTag: fff291bd-43b4-42fb-9fa2-30762bf5d59a
 	queryGroup: Parameters
 
@@ -6,7 +6,7 @@ expression Eventhouse_Cluster_URL = "https://trd-f2rh96ms24rct48qse.z8.kusto.fab
 
 	annotation PBI_ResultType = Text
 
-expression Database = "test_import" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+expression Database = "EH_MYPBITMA" meta [IsParameterQuery = true, IsParameterQueryRequired = true, Type = "Text"]
 	lineageTag: 8a3e8b14-56d5-4657-8b77-b00146b6895d
 	queryGroup: Parameters
 
@@ -15,7 +15,7 @@ expression Database = "test_import" meta [IsParameterQuery=true, Type="Text", Is
 	annotation PBI_ResultType = Text
 
 /// Identify the number of days (including today) to look in the past to retrieve the data (e.g., 7 for looking for data in the past 7 days).
-expression Days_Since_Filter = 5 meta [IsParameterQuery=true, Type="Number", IsParameterQueryRequired=true]
+expression Days_Since_Filter = 30 meta [IsParameterQuery=true, Type="Number", IsParameterQueryRequired=true]
 	lineageTag: 8aeb41ab-1b55-40d2-8adb-8a4ef18956cf
 	queryGroup: Parameters
 

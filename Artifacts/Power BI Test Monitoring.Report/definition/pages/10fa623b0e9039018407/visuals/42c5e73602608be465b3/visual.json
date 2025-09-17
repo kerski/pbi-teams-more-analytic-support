@@ -1,13 +1,13 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "42c5e73602608be465b3",
   "position": {
-    "x": 430.81777544044178,
-    "y": 48.826014549916735,
-    "z": 3000,
-    "height": 70.366903321938821,
-    "width": 213.97282846875274,
-    "tabOrder": 3000
+    "x": 9.1666666666666679,
+    "y": 260.58333333333331,
+    "z": 4000,
+    "height": 71.666666666666671,
+    "width": 183.33333333333334,
+    "tabOrder": 12000
   },
   "visual": {
     "visualType": "slicer",
@@ -125,10 +125,29 @@
       "header": [
         {
           "properties": {
-            "show": {
+            "fontFamily": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "'''Segoe UI'', wf_segoe-ui_normal, helvetica, arial, sans-serif'"
+                }
+              }
+            },
+            "textSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "8D"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 0,
+                      "Percent": -0.6
+                    }
+                  }
                 }
               }
             }
@@ -138,40 +157,22 @@
       "items": [
         {
           "properties": {
+            "textSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "8D"
+                }
+              }
+            },
             "fontColor": {
               "solid": {
                 "color": {
                   "expr": {
                     "ThemeDataColor": {
-                      "ColorId": 1,
-                      "Percent": 0
-                    }
-                  }
-                }
-              }
-            },
-            "background": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "ThemeDataColor": {
                       "ColorId": 0,
-                      "Percent": 0
+                      "Percent": -0.6
                     }
                   }
-                }
-              }
-            }
-          }
-        }
-      ],
-      "selection": [
-        {
-          "properties": {
-            "singleSelect": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
                 }
               }
             }
@@ -206,7 +207,7 @@
             "transparency": {
               "expr": {
                 "Literal": {
-                  "Value": "23D"
+                  "Value": "0D"
                 }
               }
             }
@@ -216,13 +217,6 @@
       "title": [
         {
           "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
             "text": {
               "expr": {
                 "Literal": {
@@ -230,60 +224,23 @@
                 }
               }
             },
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "ThemeDataColor": {
-                      "ColorId": 0,
-                      "Percent": 0
-                    }
-                  }
-                }
-              }
-            },
-            "bold": {
+            "titleWrap": {
               "expr": {
                 "Literal": {
                   "Value": "true"
                 }
               }
-            },
-            "background": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "ThemeDataColor": {
-                      "ColorId": 2,
-                      "Percent": 0
-                    }
-                  }
-                }
-              }
             }
           }
         }
       ],
-      "general": [
+      "border": [
         {
           "properties": {
-            "altText": {
+            "width": {
               "expr": {
                 "Literal": {
-                  "Value": "'Severity Level Slicer'"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "visualHeader": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
+                  "Value": "1D"
                 }
               }
             }
@@ -293,6 +250,7 @@
     },
     "drillFilterOtherVisuals": true
   },
+  "parentGroupName": "1177390c3dc401bb3a13",
   "filterConfig": {
     "filters": [
       {
@@ -346,21 +304,8 @@
             }
           ]
         }
-      },
-      {
-        "name": "ec8112fa0b23ab0d7504",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Artifact Name"
-          }
-        },
-        "type": "Categorical"
       }
     ]
-  }
+  },
+  "isHidden": true
 }
