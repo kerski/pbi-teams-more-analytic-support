@@ -118,12 +118,22 @@ table 'Test Results'
 
 		annotation SummarizationSetBy = Automatic
 
+	column IsLatestTestResult
+		dataType: int64
+		formatString: 0
+		sourceProviderType: bigint
+		lineageTag: 8d2e2c64-3e1e-48f8-8a9e-4a66ffdc2b94
+		summarizeBy: none
+		sourceColumn: IsLatestTestResult
+
+		annotation SummarizationSetBy = User
+
 	partition 'Test Results' = m
 		mode: directQuery
 		queryGroup: KQL
 		source =
 				let
-				    Source = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "TestResults#(lf)| extend #(lf)    PassedStatus = iif(Passed==1,'Passed','Failed')#(lf)| where Date >= ago(" & Number.ToText(Days_Since_Filter) & "d)", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null]),
+				    Source = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "fnGetTestResults #(lf)| where Date >= ago(" & Number.ToText(Days_Since_Filter) & "d)", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null]),
 				    #"Renamed Columns" = Table.RenameColumns(Source,{{"PassedStatus", "Status"}})
 				in
 				    #"Renamed Columns"

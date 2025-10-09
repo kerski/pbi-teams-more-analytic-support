@@ -2,12 +2,12 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "9e8215dba23c94acd33f",
   "position": {
-    "x": 0.43243243243243334,
+    "x": 0.43320576344913481,
     "y": 0,
     "z": 1000,
-    "height": 70.777777777777786,
-    "width": 348.66666666666669,
-    "tabOrder": 3000
+    "height": 65.737584705421156,
+    "width": 349.29019702100794,
+    "tabOrder": 1000
   },
   "visual": {
     "visualType": "cardVisual",
@@ -768,6 +768,60 @@
                       "Source": "subquery"
                     }
                   }
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      },
+      {
+        "name": "f5d00f95268e15981833",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Commits"
+              }
+            },
+            "Property": "Branch Name"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "c",
+              "Entity": "Commits",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "c"
+                          }
+                        },
+                        "Property": "Branch Name"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'main'"
+                        }
+                      }
+                    ]
+                  ]
                 }
               }
             }

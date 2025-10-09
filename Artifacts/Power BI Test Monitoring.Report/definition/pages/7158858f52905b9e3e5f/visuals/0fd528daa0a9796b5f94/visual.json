@@ -7,7 +7,7 @@
     "z": 1000,
     "height": 41,
     "width": 297,
-    "tabOrder": 1000
+    "tabOrder": 2000
   },
   "visual": {
     "visualType": "textbox",
@@ -19,7 +19,7 @@
               {
                 "textRuns": [
                   {
-                    "value": "User Acceptance Testing (UAT)",
+                    "value": "TEST",
                     "textStyle": {
                       "fontFamily": "Segoe UI Semibold",
                       "fontSize": "14pt",

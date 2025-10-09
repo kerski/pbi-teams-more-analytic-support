@@ -115,7 +115,7 @@
           "expanded": {
             "expr": {
               "Literal": {
-                "Value": "false"
+                "Value": "true"
               }
             }
           }
@@ -195,13 +195,33 @@
           "type": "Image"
         },
         {
-          "name": "Power_BI_Canvas_Background_(1)5438254706944663.png",
-          "path": "Power_BI_Canvas_Background_(1)5438254706944663.png",
+          "name": "Power_BI_Canvas_Background_(1)3653456186688233.png",
+          "path": "Power_BI_Canvas_Background_(1)3653456186688233.png",
           "type": "Image"
         },
         {
-          "name": "Power_BI_Canvas_Background_(1)3653456186688233.png",
-          "path": "Power_BI_Canvas_Background_(1)3653456186688233.png",
+          "name": "Bug25086641068825977.png",
+          "path": "Bug25086641068825977.png",
+          "type": "Image"
+        },
+        {
+          "name": "Warning4761883288828108.png",
+          "path": "Warning4761883288828108.png",
+          "type": "Image"
+        },
+        {
+          "name": "Information9493139058539372.png",
+          "path": "Information9493139058539372.png",
+          "type": "Image"
+        },
+        {
+          "name": "Power_BI_Canvas_Background012809257290868237.png",
+          "path": "Power_BI_Canvas_Background012809257290868237.png",
+          "type": "Image"
+        },
+        {
+          "name": "Power_BI_Canvas_Background45577547326180246.png",
+          "path": "Power_BI_Canvas_Background45577547326180246.png",
           "type": "Image"
         }
       ]

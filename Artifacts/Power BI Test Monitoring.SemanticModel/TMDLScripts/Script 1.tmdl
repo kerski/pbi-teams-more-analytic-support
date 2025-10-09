@@ -1,0 +1,146 @@
+createOrReplace
+
+	table 'Test Results'
+		lineageTag: f7e2fb90-38e1-44f1-bff2-dbc63ff1bfcd
+
+		column Id
+			dataType: int64
+			formatString: 0
+			sourceProviderType: bigint
+			lineageTag: 57d8ec15-9c6f-4372-bab9-a600cefcc724
+			summarizeBy: none
+			sourceColumn: Id
+
+			annotation SummarizationSetBy = Automatic
+
+		column CommitsId
+			dataType: int64
+			isHidden
+			formatString: 0
+			isAvailableInMdx: false
+			sourceProviderType: bigint
+			lineageTag: fd5a39ff-f541-417a-a64c-3cec003b73a5
+			summarizeBy: none
+			sourceColumn: CommitsId
+
+			annotation SummarizationSetBy = Automatic
+
+		column TestsId
+			dataType: int64
+			isHidden
+			formatString: 0
+			isAvailableInMdx: false
+			sourceProviderType: bigint
+			lineageTag: 36204cec-516b-4549-a85b-15184773bf46
+			summarizeBy: none
+			sourceColumn: TestsId
+
+			annotation SummarizationSetBy = Automatic
+
+		column SeverityId
+			dataType: int64
+			isHidden
+			formatString: 0
+			isAvailableInMdx: false
+			sourceProviderType: int
+			lineageTag: 325fd269-4e3f-48e5-b04f-186b2959323e
+			summarizeBy: none
+			sourceColumn: SeverityId
+
+			annotation SummarizationSetBy = Automatic
+
+		column Actual
+			dataType: string
+			sourceProviderType: nvarchar(max)
+			lineageTag: 8871cc55-aa68-4222-a129-c34e62ae812b
+			summarizeBy: none
+			sourceColumn: Actual
+
+			annotation SummarizationSetBy = Automatic
+
+		column Expected
+			dataType: string
+			sourceProviderType: nvarchar(max)
+			lineageTag: c4153837-64a7-4785-b52b-3338688cb609
+			summarizeBy: none
+			sourceColumn: Expected
+
+			annotation SummarizationSetBy = Automatic
+
+		column Details
+			dataType: string
+			sourceProviderType: nvarchar(max)
+			lineageTag: 2f1fe3ee-1aaa-4f41-8ab5-7459dad1cc94
+			summarizeBy: none
+			sourceColumn: Details
+
+			annotation SummarizationSetBy = Automatic
+
+		column Passed
+			dataType: int64
+			formatString: 0
+			sourceProviderType: int
+			lineageTag: 38593ea3-7dc3-42f9-908c-674aaec3f7ea
+			summarizeBy: none
+			sourceColumn: Passed
+
+			annotation SummarizationSetBy = Automatic
+
+		column Date
+			dataType: dateTime
+			isHidden
+			formatString: General Date
+			isAvailableInMdx: false
+			sourceProviderType: datetimeoffset
+			lineageTag: 19aa098f-cf67-45d5-be83-b022899364ae
+			summarizeBy: none
+			sourceColumn: Date
+
+			annotation SummarizationSetBy = Automatic
+
+		column Time
+			dataType: dateTime
+			formatString: Long Time
+			lineageTag: 059d5a63-410f-4bff-9bbe-bb9f49521e56
+			summarizeBy: none
+			sourceColumn: Time
+
+			changedProperty = DataType
+
+			annotation SummarizationSetBy = Automatic
+
+			annotation UnderlyingDateTimeDataType = Time
+
+		column Status
+			dataType: string
+			sourceProviderType: nvarchar(max)
+			lineageTag: d114d801-4bd0-42c2-a4e6-6cce3c130df4
+			summarizeBy: none
+			sourceColumn: Status
+
+			annotation SummarizationSetBy = Automatic
+
+		column IsLatestTestResult
+			dataType: int64
+			formatString: 0
+			sourceProviderType: bigint
+			lineageTag: 8d2e2c64-3e1e-48f8-8a9e-4a66ffdc2b94
+			summarizeBy: none
+			sourceColumn: IsLatestTestResult
+
+			annotation SummarizationSetBy = User
+
+		partition 'Test Results' = m
+			mode: directQuery
+			queryGroup: KQL
+			source =
+					let
+					    Source = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "fnGetTestResults #(lf)| where Date >= ago(" & Number.ToText(Days_Since_Filter) & "d)", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null]),
+					    #"Renamed Columns" = Table.RenameColumns(Source,{{"PassedStatus", "Status"}})
+					in
+					    #"Renamed Columns"
+
+		annotation PBI_ResultType = Table
+
+		annotation PBI_NavigationStepName = Navigation
+

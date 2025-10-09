@@ -2,12 +2,12 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "f72bae5f0c5d2946558f",
   "position": {
-    "x": 1.0990990990991012,
-    "y": 175.74074074074076,
+    "x": 1.1010646487665507,
+    "y": 163.22597562910696,
     "z": 2000,
-    "height": 65.000000000000014,
-    "width": 348.88888888888886,
-    "tabOrder": 5000
+    "height": 60.371251260080662,
+    "width": 349.512816649447,
+    "tabOrder": 6000
   },
   "visual": {
     "visualType": "barChart",
@@ -35,17 +35,38 @@
           "projections": [
             {
               "field": {
-                "Measure": {
-                  "Expression": {
-                    "SourceRef": {
-                      "Entity": "_Measures"
+                "Arithmetic": {
+                  "Left": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Measures"
+                        }
+                      },
+                      "Property": "Number of Tests"
                     }
                   },
-                  "Property": "Number of Tests"
+                  "Right": {
+                    "ScopedEval": {
+                      "Expression": {
+                        "Measure": {
+                          "Expression": {
+                            "SourceRef": {
+                              "Entity": "_Measures"
+                            }
+                          },
+                          "Property": "Number of Tests"
+                        }
+                      },
+                      "Scope": []
+                    }
+                  },
+                  "Operator": 3
                 }
               },
               "queryRef": "_Measures.Number of Tests",
-              "nativeQueryRef": "Number of Tests"
+              "nativeQueryRef": " Number of Tests",
+              "displayName": " Number of Tests"
             }
           ]
         }
@@ -154,6 +175,13 @@
               "expr": {
                 "Literal": {
                   "Value": "8D"
+                }
+              }
+            },
+            "labelPrecision": {
+              "expr": {
+                "Literal": {
+                  "Value": "1L"
                 }
               }
             }
@@ -366,5 +394,78 @@
     },
     "drillFilterOtherVisuals": true
   },
-  "parentGroupName": "6c307edbc1e8610244a0"
+  "parentGroupName": "6c307edbc1e8610244a0",
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "5ec8b94388551233c0aa",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Commits"
+              }
+            },
+            "Property": "Branch Name"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "c",
+              "Entity": "Commits",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "c"
+                          }
+                        },
+                        "Property": "Branch Name"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'main'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      },
+      {
+        "name": "9b6a359a354a52e83080",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Number of Tests"
+          }
+        },
+        "type": "Advanced",
+        "howCreated": "User"
+      }
+    ]
+  }
 }

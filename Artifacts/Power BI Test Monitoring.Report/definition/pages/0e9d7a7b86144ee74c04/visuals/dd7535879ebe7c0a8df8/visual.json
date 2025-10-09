@@ -2,12 +2,12 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "dd7535879ebe7c0a8df8",
   "position": {
-    "x": 77.765765765765764,
-    "y": 240.74074074074079,
+    "x": 77.904836460269252,
+    "y": 223.59722688918762,
     "z": 4000,
-    "height": 48.148148148148152,
-    "width": 86.666666666666671,
-    "tabOrder": 2000
+    "height": 44.719445377837523,
+    "width": 86.821655091263921,
+    "tabOrder": 4000
   },
   "visual": {
     "visualType": "cardVisual",
@@ -787,6 +787,60 @@
                       {
                         "Literal": {
                           "Value": "'Warning'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      },
+      {
+        "name": "1fb33b4c52ec310e0150",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Commits"
+              }
+            },
+            "Property": "Branch Name"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "c",
+              "Entity": "Commits",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "c"
+                          }
+                        },
+                        "Property": "Branch Name"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'main'"
                         }
                       }
                     ]

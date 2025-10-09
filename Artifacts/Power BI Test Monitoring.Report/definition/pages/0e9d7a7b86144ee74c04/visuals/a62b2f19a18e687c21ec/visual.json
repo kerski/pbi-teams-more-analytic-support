@@ -2,11 +2,12 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "a62b2f19a18e687c21ec",
   "position": {
-    "x": 164.13180674233305,
-    "y": 241.3656034024456,
+    "x": 164.42532824410185,
+    "y": 224.17759213153877,
     "z": 5000,
-    "height": 48.341945773524728,
-    "width": 115.77946264262054
+    "height": 44.899442379917772,
+    "width": 115.98651429472473,
+    "tabOrder": 3000
   },
   "visual": {
     "visualType": "cardVisual",
@@ -786,6 +787,60 @@
                       {
                         "Literal": {
                           "Value": "'Informational'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
+      },
+      {
+        "name": "6101eb6e12b9cad0313a",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Commits"
+              }
+            },
+            "Property": "Branch Name"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "c",
+              "Entity": "Commits",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "c"
+                          }
+                        },
+                        "Property": "Branch Name"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'main'"
                         }
                       }
                     ]

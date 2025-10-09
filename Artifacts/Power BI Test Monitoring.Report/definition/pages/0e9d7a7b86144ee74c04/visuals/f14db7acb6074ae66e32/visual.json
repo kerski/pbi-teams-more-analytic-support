@@ -2,12 +2,12 @@
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "f14db7acb6074ae66e32",
   "position": {
-    "x": 1.2972972972972965,
-    "y": 316.11861861861865,
+    "x": 1.2996172903474008,
+    "y": 293.60733157868054,
     "z": 6000,
-    "height": 316.21621621621625,
-    "width": 348.97297297297297,
-    "tabOrder": 6000
+    "height": 293.69797910309507,
+    "width": 349.59705110345107,
+    "tabOrder": 5000
   },
   "visual": {
     "visualType": "cardVisual",
@@ -1171,6 +1171,60 @@
             }
           ]
         }
+      },
+      {
+        "name": "d2bb31b536179dd3844b",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Commits"
+              }
+            },
+            "Property": "Branch Name"
+          }
+        },
+        "type": "Categorical",
+        "filter": {
+          "Version": 2,
+          "From": [
+            {
+              "Name": "c",
+              "Entity": "Commits",
+              "Type": 0
+            }
+          ],
+          "Where": [
+            {
+              "Condition": {
+                "In": {
+                  "Expressions": [
+                    {
+                      "Column": {
+                        "Expression": {
+                          "SourceRef": {
+                            "Source": "c"
+                          }
+                        },
+                        "Property": "Branch Name"
+                      }
+                    }
+                  ],
+                  "Values": [
+                    [
+                      {
+                        "Literal": {
+                          "Value": "'main'"
+                        }
+                      }
+                    ]
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "howCreated": "User"
       }
     ]
   }

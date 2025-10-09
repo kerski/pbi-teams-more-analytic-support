@@ -4,10 +4,10 @@
   "position": {
     "x": 0,
     "y": 0,
-    "z": 5000,
+    "z": 4000,
     "height": 47.5,
     "width": 33.75,
-    "tabOrder": 9000
+    "tabOrder": 2000
   },
   "visual": {
     "visualType": "actionButton",
@@ -90,7 +90,7 @@
             "bookmark": {
               "expr": {
                 "Literal": {
-                  "Value": "'582501c8b464a0856e97'"
+                  "Value": "'c1bc7e5869d31c08e99d'"
                 }
               }
             },
@@ -120,5 +120,6 @@
     },
     "drillFilterOtherVisuals": true
   },
+  "isHidden": true,
   "howCreated": "InsertVisualButton"
 }

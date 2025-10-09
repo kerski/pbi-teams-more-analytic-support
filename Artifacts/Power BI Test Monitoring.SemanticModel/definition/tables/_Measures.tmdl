@@ -64,7 +64,7 @@ table _Measures
 		formatString: 0.0%;-0.0%;0.0%
 		lineageTag: f32cbd6f-850f-4d0e-9a36-62987d8accf5
 
-	measure 'Test Pass Rate' = 1 - [Test Fail Rate]
+	measure 'Test Pass Rate' = IF ( [Number of Tests] = 0, 0, 1 - [Test Fail Rate] )
 		formatString: 0.0%;-0.0%;0.0%
 		lineageTag: 00983086-d91d-4d1f-b9ce-73c380aebde5
 
