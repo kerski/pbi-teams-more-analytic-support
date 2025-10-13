@@ -54,18 +54,30 @@ jobs:
         fetchDepth: 0            # Fetch full git history
 
       # =============================================================================
-      # STEP 2: DOWNLOAD ARTIFACTS FROM UPSTREAM PIPELINE
+      # STEP 2: DOWNLOAD ARTIFACTS FROM TRIGGERING PIPELINE
       # =============================================================================
-      # Download semantic models from the triggering pipeline
       - task: DownloadBuildArtifacts@1
+        displayName: 'Download Triggering Build Artifacts'
         inputs:
-          buildType: 'specific'                           # Download from specific pipeline
-          project: 'PBI-Test'                            # Source project name
-          pipeline: '$(UPSTREAM_PIPELINE_ID)'            # ID of the pipeline that publishes artifacts
-          runVersion: 'latest'                           # Use latest successful run
-          artifactName: 'CombinedModels'                 # Name of artifact to download
-          targetPath: '$(Pipeline.Workspace)/CombinedModels'  # Local download path
-          itemPattern: CombinedModels/**                 # Pattern to match artifact contents
+          buildType: 'specific'
+          project: 'PBI-Test'
+          pipeline: '$(resources.pipeline.test-trigger.pipelineName)'  # Use pipelineName instead of pipelineID
+          buildVersionToDownload: 'specific'                           # Specify we want a specific build
+          buildId: '$(resources.pipeline.test-trigger.runID)'         # The exact build that triggered this pipeline
+          artifactName: 'CombinedModels'
+          downloadPath: '$(System.ArtifactsDirectory)'                # Explicit download path
+
+      # =============================================================================
+      # DEBUG: SHOW TRIGGERING PIPELINE CONTEXT
+      # =============================================================================
+      - script: |
+          echo "Triggered by pipeline: $(resources.pipeline.test-trigger.pipelineName)"
+          echo "Triggered run ID:      $(resources.pipeline.test-trigger.runID)"
+          echo "Triggered pipeline ID: $(resources.pipeline.test-trigger.pipelineID)"
+          echo "Source branch (full):  $(resources.pipeline.test-trigger.sourceBranch)"
+          echo "Artifacts directory:   $(System.ArtifactsDirectory)"
+        displayName: 'Debug Triggering Pipeline Variables'
+
 
       # =============================================================================
       # STEP 3: MAIN TABULAR EDITOR ANALYSIS AND INGESTION LOGIC
@@ -293,4 +305,4 @@ jobs:
         # =============================================================================
         env:
           CLIENT_SECRET: $(CLIENT_SECRET)  # Service Principal secret (sensitive)
-          ADO_TOKEN: $(ADO_TOKEN)         # Azure DevOps Personal Access Token for REST API
+          ADO_TOKEN: $(ADO_TOKEN)         # Azure DevOps Personal Access Token for REST API        

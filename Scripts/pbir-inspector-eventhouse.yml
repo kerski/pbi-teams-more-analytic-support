@@ -75,18 +75,29 @@ jobs:
         displayName: 'Set executable permissions for PBIR Inspector CLI'
 
       # =============================================================================
-      # STEP 3: DOWNLOAD ARTIFACTS FROM UPSTREAM PIPELINE
+      # STEP 3: DOWNLOAD ARTIFACTS FROM TRIGGERING PIPELINE
       # =============================================================================
-      # Download Power BI reports from the triggering pipeline
       - task: DownloadBuildArtifacts@1
+        displayName: 'Download Triggering Build Artifacts'
         inputs:
-          buildType: 'specific'                           # Download from specific pipeline
-          project: 'PBI-Test'                            # Source project name
-          pipeline: '$(UPSTREAM_PIPELINE_ID)'            # ID of the pipeline that publishes artifacts
-          runVersion: 'latest'                           # Use latest successful run
-          artifactName: 'CombinedReports'                # Name of artifact to download
-          targetPath: '$(Pipeline.Workspace)/CombinedReports'  # Local download path
-          itemPattern: CombinedReports/**                # Pattern to match artifact contents
+          buildType: 'specific'
+          project: 'PBI-Test'
+          pipeline: '$(resources.pipeline.test-trigger.pipelineName)'  # Use pipelineName instead of pipelineID
+          buildVersionToDownload: 'specific'                           # Specify we want a specific build
+          buildId: '$(resources.pipeline.test-trigger.runID)'         # The exact build that triggered this pipeline
+          artifactName: 'CombinedReports'
+          downloadPath: '$(System.ArtifactsDirectory)'                # Explicit download path
+
+      # =============================================================================
+      # DEBUG: SHOW TRIGGERING PIPELINE CONTEXT
+      # =============================================================================
+      - script: |
+          echo "Triggered by pipeline: $(resources.pipeline.test-trigger.pipelineName)"
+          echo "Triggered run ID:      $(resources.pipeline.test-trigger.runID)"
+          echo "Triggered pipeline ID: $(resources.pipeline.test-trigger.pipelineID)"
+          echo "Source branch (full):  $(resources.pipeline.test-trigger.sourceBranch)"
+          echo "Artifacts directory:   $(System.ArtifactsDirectory)"
+        displayName: 'Debug Triggering Pipeline Variables'
 
       # =============================================================================
       # STEP 4: MAIN PBIR INSPECTOR ANALYSIS AND INGESTION LOGIC
@@ -234,13 +245,13 @@ jobs:
                         # ENRICH RESULTS WITH METADATA
                         # =============================================================================
                         # Add contextual information to the results
-                        $results | Add-Member -MemberType NoteProperty -Name "RepositoryId" -Value $repositoryId
-                        $results | Add-Member -MemberType NoteProperty -Name "BranchName" -Value $branchName
-                        $results | Add-Member -MemberType NoteProperty -Name "LogicalId" -Value $logicalId
-                        $results | Add-Member -MemberType NoteProperty -Name "CommitId" -Value $commitId
-                        $results | Add-Member -MemberType NoteProperty -Name "CommittedBy" -Value $committerEmail
-                        $results | Add-Member -MemberType NoteProperty -Name "Timestamp" -Value $currentTime
-                        $results | Add-Member -MemberType NoteProperty -Name "ReportName" -Value $reportName
+                        $results | Add-Member -MemberType NoteProperty -Name "RepositoryId" -Value $repositoryId -Force
+                        $results | Add-Member -MemberType NoteProperty -Name "BranchName" -Value $branchName -Force
+                        $results | Add-Member -MemberType NoteProperty -Name "LogicalId" -Value $logicalId -Force
+                        $results | Add-Member -MemberType NoteProperty -Name "CommitId" -Value $commitId -Force
+                        $results | Add-Member -MemberType NoteProperty -Name "CommittedBy" -Value $committerEmail -Force
+                        $results | Add-Member -MemberType NoteProperty -Name "Timestamp" -Value $currentTime -Force
+                        $results | Add-Member -MemberType NoteProperty -Name "ReportName" -Value $reportName -Force
                     
                         # Write enriched results back to file
                         $results | ConvertTo-Json -Depth 10 | Set-Content -Path $tempFile.FullName -Encoding UTF8

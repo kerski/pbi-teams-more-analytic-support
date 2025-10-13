@@ -227,7 +227,7 @@ pbir_inspector_bronze
     Date = todatetime(strcat(TSYear,'-',TSMonth,'-',TSDay,' 00:00:00Z')),
     Time = totimespan(strcat(TSHour, ":", TSMinute, ":", TSSecond))
 | project
-    Id = hash(strcat(CommitsId, TestsId, tostring(Date), tostring(Time))),
+    Id = hash(strcat(CommitsId, TestsId, TmdlFileName, tostring(Date), tostring(Time))),
     CommitsId,
     TestsId,
     SeverityId,
@@ -414,12 +414,39 @@ pbir_inspector_bronze
     tabular_editor_test_results_silver
     | distinct Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, Date, Time
 }
-.create-or-alter materialized-view  TestResults on table test_results_silver_combined { test_results_silver_combined
-    | summarize take_any(*) by Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, Date, Time }
+.create-or-alter function with (folder = "Gold", docstring = "Update Tests Results to Find Latest", skipvalidation = "true") fnGetTestResults() {
+    test_results_silver_combined
+    | extend DateTime = make_datetime(
+        datetime_part("year", Date), 
+        datetime_part("month", Date), 
+        datetime_part("day", Date), 
+        toint(split(Time, ":")[0]), 
+        toint(split(Time, ":")[1]), 
+        toint(split(Time, ":")[2])
+    )
+    | join kind=leftouter (
+        test_results_silver_combined
+        | extend DateTime = make_datetime(
+            datetime_part("year", Date), 
+            datetime_part("month", Date), 
+            datetime_part("day", Date), 
+            toint(split(Time, ":")[0]), 
+            toint(split(Time, ":")[1]), 
+            toint(split(Time, ":")[2])
+        )
+        | summarize MaxDateTime = max(DateTime) by TestsId
+    ) on $left.TestsId == $right.TestsId
+    | extend IsLatestTestResult = iff(DateTime == MaxDateTime, 1, 0)
+    | project-away MaxDateTime
+    | extend PassedStatus = iif(Passed==1,'Passed','Failed')
+    | project Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, PassedStatus, Date, Time, IsLatestTestResult
+}
 .create-or-alter materialized-view  Tests on table tests_silver_combined { tests_silver_combined
     | summarize take_any(*) by Id, BusinessKey, Name, Description, Source }
 .create-or-alter materialized-view  Commits on table commits_silver_combined { commits_silver_combined
     | summarize take_any(*) by Id, RepositoryId, CommitId,  CommittedBy, BranchName, LogicalId, ArtifactName, Type, Date }
+.create-or-alter materialized-view  TestResults on table test_results_silver_combined { test_results_silver_combined
+    | summarize take_any(*) by Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, Date, Time }
 .alter table pq_lint_tests_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_bronze\",\"Query\":\"fnParsePQLintTest\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
 .alter table pbir_inspector_tests_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pbir_inspector_bronze\",\"Query\":\"fnParsePBIRInspectorTest\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
 .alter table tabular_editor_tests_silver policy update "[{\"IsEnabled\":true,\"Source\":\"tabular_editor_bronze\",\"Query\":\"fnParseTabularEditorTest\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"

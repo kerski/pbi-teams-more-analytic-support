@@ -1,12 +1,12 @@
 {
   "$schema": "https://developer.microsoft.com/json-schemas/fabric/gitIntegration/platformProperties/2.0.0/schema.json",
   "metadata": {
-    "type": "Eventhouse",
-    "displayName": "EH_MYPBITMA",
-    "description": "EH_MYPBITMA"
+    "type": "KQLQueryset",
+    "displayName": "Monitoring_QuerySet",
+    "description": "Monitoring_QuerySet"
   },
   "config": {
     "version": "2.0",
-    "logicalId": "ce115e97-f869-8cae-43c7-88a980e165ab"
+    "logicalId": "b56d9370-86fd-ac95-43db-68679641cb94"
   }
 }
