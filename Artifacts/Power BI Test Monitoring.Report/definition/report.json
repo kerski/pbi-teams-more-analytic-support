@@ -1,18 +1,25 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/1.3.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/report/3.0.0/schema.json",
   "themeCollection": {
     "baseTheme": {
       "name": "CY24SU10",
-      "reportVersionAtImport": "5.64",
+      "reportVersionAtImport": {
+        "visual": "1.8.100",
+        "report": "2.0.100",
+        "page": "1.3.100"
+      },
       "type": "SharedResources"
     },
     "customTheme": {
-      "name": "Peer_Review011350898398807208.json",
-      "reportVersionAtImport": "5.64",
+      "name": "Custom726703271200085.json",
+      "reportVersionAtImport": {
+        "visual": "2.1.0",
+        "report": "2.1.0",
+        "page": "2.0.0"
+      },
       "type": "RegisteredResources"
     }
   },
-  "layoutOptimization": "None",
   "filterConfig": {
     "filters": [
       {
@@ -101,6 +108,19 @@
           }
         }
       }
+    ],
+    "outspacePane": [
+      {
+        "properties": {
+          "expanded": {
+            "expr": {
+              "Literal": {
+                "Value": "true"
+              }
+            }
+          }
+        }
+      }
     ]
   },
   "resourcePackages": [
@@ -120,13 +140,88 @@
       "type": "RegisteredResources",
       "items": [
         {
-          "name": "Peer_Review011350898398807208.json",
-          "path": "Peer_Review011350898398807208.json",
+          "name": "Custom726703271200085.json",
+          "path": "Custom726703271200085.json",
           "type": "CustomTheme"
         },
         {
-          "name": "Overview9352556392697383.svg",
-          "path": "Overview9352556392697383.svg",
+          "name": "menu-24324494100479981.svg",
+          "path": "menu-24324494100479981.svg",
+          "type": "Image"
+        },
+        {
+          "name": "Power_BI_Canvas_Background_(3)5155461988879343.png",
+          "path": "Power_BI_Canvas_Background_(3)5155461988879343.png",
+          "type": "Image"
+        },
+        {
+          "name": "Group_3_(1)6762959390986936.png",
+          "path": "Group_3_(1)6762959390986936.png",
+          "type": "Image"
+        },
+        {
+          "name": "Group_1_(5)2153422285772194.png",
+          "path": "Group_1_(5)2153422285772194.png",
+          "type": "Image"
+        },
+        {
+          "name": "Bug3299976384535662.png",
+          "path": "Bug3299976384535662.png",
+          "type": "Image"
+        },
+        {
+          "name": "Warning7157566989917272.png",
+          "path": "Warning7157566989917272.png",
+          "type": "Image"
+        },
+        {
+          "name": "Information3669359473731526.png",
+          "path": "Information3669359473731526.png",
+          "type": "Image"
+        },
+        {
+          "name": "report_48_item34036744937619134.png",
+          "path": "report_48_item34036744937619134.png",
+          "type": "Image"
+        },
+        {
+          "name": "report_48_item5977784569612523.png",
+          "path": "report_48_item5977784569612523.png",
+          "type": "Image"
+        },
+        {
+          "name": "semantic_model_20_item6472354936363616.png",
+          "path": "semantic_model_20_item6472354936363616.png",
+          "type": "Image"
+        },
+        {
+          "name": "Power_BI_Canvas_Background_(1)3653456186688233.png",
+          "path": "Power_BI_Canvas_Background_(1)3653456186688233.png",
+          "type": "Image"
+        },
+        {
+          "name": "Bug25086641068825977.png",
+          "path": "Bug25086641068825977.png",
+          "type": "Image"
+        },
+        {
+          "name": "Warning4761883288828108.png",
+          "path": "Warning4761883288828108.png",
+          "type": "Image"
+        },
+        {
+          "name": "Information9493139058539372.png",
+          "path": "Information9493139058539372.png",
+          "type": "Image"
+        },
+        {
+          "name": "Power_BI_Canvas_Background012809257290868237.png",
+          "path": "Power_BI_Canvas_Background012809257290868237.png",
+          "type": "Image"
+        },
+        {
+          "name": "Power_BI_Canvas_Background45577547326180246.png",
+          "path": "Power_BI_Canvas_Background45577547326180246.png",
           "type": "Image"
         }
       ]

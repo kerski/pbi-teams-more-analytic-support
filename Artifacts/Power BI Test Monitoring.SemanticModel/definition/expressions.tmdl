@@ -15,7 +15,7 @@ expression Database = "EH_MYPBITMA" meta [IsParameterQuery = true, IsParameterQu
 	annotation PBI_ResultType = Text
 
 /// Identify the number of days (including today) to look in the past to retrieve the data (e.g., 7 for looking for data in the past 7 days).
-expression Days_Since_Filter = 5 meta [IsParameterQuery=true, Type="Number", IsParameterQueryRequired=true]
+expression Days_Since_Filter = 30 meta [IsParameterQuery=true, Type="Number", IsParameterQueryRequired=true]
 	lineageTag: 8aeb41ab-1b55-40d2-8adb-8a4ef18956cf
 	queryGroup: Parameters
 

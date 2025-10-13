@@ -1,7 +1,7 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/1.4.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.0.0/schema.json",
   "name": "10fa623b0e9039018407",
-  "displayName": "Home",
+  "displayName": "Test Results Summary",
   "displayOption": "FitToPage",
   "height": 720,
   "width": 1280,
@@ -14,45 +14,19 @@
               "name": {
                 "expr": {
                   "Literal": {
-                    "Value": "'Overview.svg'"
+                    "Value": "''"
                   }
                 }
               },
               "url": {
                 "expr": {
-                  "ResourcePackageItem": {
-                    "PackageName": "RegisteredResources",
-                    "PackageType": 1,
-                    "ItemName": "Overview9352556392697383.svg"
-                  }
-                }
-              },
-              "scaling": {
-                "expr": {
                   "Literal": {
-                    "Value": "'Normal'"
+                    "Value": "''"
                   }
                 }
               }
             }
           },
-          "color": {
-            "solid": {
-              "color": {
-                "expr": {
-                  "Literal": {
-                    "Value": "'#EAEAEA'"
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    ],
-    "background": [
-      {
-        "properties": {
           "color": {
             "solid": {
               "color": {
@@ -88,6 +62,39 @@
             "expr": {
               "Literal": {
                 "Value": "'PT5M'"
+              }
+            }
+          }
+        }
+      }
+    ],
+    "background": [
+      {
+        "properties": {
+          "image": {
+            "image": {
+              "name": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'Power BI Canvas Background.png'"
+                  }
+                }
+              },
+              "url": {
+                "expr": {
+                  "ResourcePackageItem": {
+                    "PackageName": "RegisteredResources",
+                    "PackageType": 1,
+                    "ItemName": "Power_BI_Canvas_Background012809257290868237.png"
+                  }
+                }
+              },
+              "scaling": {
+                "expr": {
+                  "Literal": {
+                    "Value": "'Normal'"
+                  }
+                }
               }
             }
           }

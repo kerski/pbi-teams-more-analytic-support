@@ -1,13 +1,13 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.0.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "980e55cdee85124a0110",
   "position": {
-    "x": 966.46787623805767,
-    "y": 48.826014549916735,
-    "z": 5000,
-    "height": 70.366903321938821,
-    "width": 168.01893242177229,
-    "tabOrder": 5000
+    "x": 9.1666666666666679,
+    "y": 464.3333333333332,
+    "z": 6000,
+    "height": 71.666666666666671,
+    "width": 183.33333333333334,
+    "tabOrder": 3000
   },
   "visual": {
     "visualType": "slicer",
@@ -51,10 +51,29 @@
       "header": [
         {
           "properties": {
-            "show": {
+            "fontFamily": {
               "expr": {
                 "Literal": {
-                  "Value": "false"
+                  "Value": "'''Segoe UI'', wf_segoe-ui_normal, helvetica, arial, sans-serif'"
+                }
+              }
+            },
+            "textSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "8D"
+                }
+              }
+            },
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "ThemeDataColor": {
+                      "ColorId": 0,
+                      "Percent": -0.6
+                    }
+                  }
                 }
               }
             }
@@ -64,49 +83,26 @@
       "items": [
         {
           "properties": {
+            "textSize": {
+              "expr": {
+                "Literal": {
+                  "Value": "8D"
+                }
+              }
+            },
             "fontColor": {
               "solid": {
                 "color": {
                   "expr": {
                     "ThemeDataColor": {
-                      "ColorId": 1,
-                      "Percent": 0
-                    }
-                  }
-                }
-              }
-            },
-            "background": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "ThemeDataColor": {
                       "ColorId": 0,
-                      "Percent": 0
+                      "Percent": -0.6
                     }
                   }
                 }
               }
             }
           }
-        }
-      ],
-      "selection": [
-        {
-          "properties": {
-            "singleSelect": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "general": [
-        {
-          "properties": {}
         }
       ]
     },
@@ -124,7 +120,7 @@
             "transparency": {
               "expr": {
                 "Literal": {
-                  "Value": "23D"
+                  "Value": "0D"
                 }
               }
             }
@@ -134,13 +130,6 @@
       "title": [
         {
           "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "true"
-                }
-              }
-            },
             "text": {
               "expr": {
                 "Literal": {
@@ -148,60 +137,23 @@
                 }
               }
             },
-            "fontColor": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "ThemeDataColor": {
-                      "ColorId": 0,
-                      "Percent": 0
-                    }
-                  }
-                }
-              }
-            },
-            "bold": {
+            "titleWrap": {
               "expr": {
                 "Literal": {
                   "Value": "true"
                 }
               }
-            },
-            "background": {
-              "solid": {
-                "color": {
-                  "expr": {
-                    "ThemeDataColor": {
-                      "ColorId": 2,
-                      "Percent": 0
-                    }
-                  }
-                }
-              }
             }
           }
         }
       ],
-      "general": [
+      "border": [
         {
           "properties": {
-            "altText": {
+            "width": {
               "expr": {
                 "Literal": {
-                  "Value": "'Severity Level Slicer'"
-                }
-              }
-            }
-          }
-        }
-      ],
-      "visualHeader": [
-        {
-          "properties": {
-            "show": {
-              "expr": {
-                "Literal": {
-                  "Value": "false"
+                  "Value": "1D"
                 }
               }
             }
@@ -211,6 +163,7 @@
     },
     "drillFilterOtherVisuals": true
   },
+  "parentGroupName": "1177390c3dc401bb3a13",
   "filterConfig": {
     "filters": [
       {
@@ -287,5 +240,6 @@
       }
     ],
     "filterSortOrder": "Custom"
-  }
+  },
+  "isHidden": true
 }

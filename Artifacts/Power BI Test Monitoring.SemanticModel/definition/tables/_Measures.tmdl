@@ -6,7 +6,7 @@ table _Measures
 		lineageTag: 7105ff61-a291-4083-8402-0c1c45ab51e5
 
 	measure 'Number of Tests' = COUNTROWS('Test Results') + 0
-		formatString: 0
+		formatString: #,0
 		lineageTag: 239caede-a151-4dcf-a15e-a1c7cc93c536
 
 	measure 'Selected Time Zone Offset' = SELECTEDVALUE('Timezones'[DAX UTC Offset],0)
@@ -57,6 +57,16 @@ table _Measures
 		formatString: General Date
 		displayFolder: Date and Time Zone Presentation
 		lineageTag: 88ba2389-32ba-4306-918a-46873b3ee2f3
+
+	measure 'Test Fail Rate' = ```
+			DIVIDE( [Failed Tests] , [Number of Tests] ) 
+			```
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: f32cbd6f-850f-4d0e-9a36-62987d8accf5
+
+	measure 'Test Pass Rate' = IF ( [Number of Tests] = 0, 0, 1 - [Test Fail Rate] )
+		formatString: 0.0%;-0.0%;0.0%
+		lineageTag: 00983086-d91d-4d1f-b9ce-73c380aebde5
 
 	column Column1
 		dataType: string
