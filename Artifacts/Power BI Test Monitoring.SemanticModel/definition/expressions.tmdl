@@ -23,3 +23,11 @@ expression Days_Since_Filter = 30 meta [IsParameterQuery=true, Type="Number", Is
 
 	annotation PBI_ResultType = Number
 
+expression Culture = "en-US" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+	lineageTag: 9801ddab-15d2-48bb-abc3-f877a0853c39
+	queryGroup: Parameters
+
+	annotation PBI_NavigationStepName = Navigation
+
+	annotation PBI_ResultType = Text
+

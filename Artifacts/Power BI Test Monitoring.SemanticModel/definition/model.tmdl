@@ -21,7 +21,7 @@ queryGroup Functions
 
 annotation __PBI_TimeIntelligenceEnabled = 0
 
-annotation PBI_QueryOrder = ["Commits","Tests","Test Results","Eventhouse_Cluster_URL","Database","Days_Since_Filter","Severity","Timezones","Calendar","_Measures"]
+annotation PBI_QueryOrder = ["Commits","Tests","Test Results","Eventhouse_Cluster_URL","Database","Days_Since_Filter","Severity","Timezones","Calendar","_Measures","Culture"]
 
 annotation PBI_ProTooling = ["DevMode","TMDLView_Desktop"]
 

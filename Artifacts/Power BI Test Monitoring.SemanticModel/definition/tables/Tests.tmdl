@@ -53,9 +53,10 @@ table Tests
 		queryGroup: KQL
 		source =
 				let
-				    Source = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "Tests", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null])
+				    // Connects to Azure Data Explorer cluster and retrieves the 'Tests' table based on specified parameters
+				    #"Retrieved Tests Table From Azure Cluster" = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "Tests", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null])
 				in
-				    Source
+				    #"Retrieved Tests Table From Azure Cluster"
 
 	annotation PBI_NavigationStepName = Navigation
 

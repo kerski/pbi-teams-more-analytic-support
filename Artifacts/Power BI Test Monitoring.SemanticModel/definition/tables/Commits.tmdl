@@ -106,10 +106,12 @@ table Commits
 		queryGroup: KQL
 		source =
 				let
-				    Source = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "Commits #(lf)| where Date >= ago(" & Number.ToText(Days_Since_Filter) &"d)", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null]),
-				    #"Renamed Columns" = Table.RenameColumns(Source,{{"ArtifactName", "Artifact Name"}, {"BranchName", "Branch Name"}, {"CommittedBy", "Committed By"}})
+				    // Connects to Azure Data Explorer and queries commits within filtered days
+				    #"Retrieved Commits From ADX" = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "Commits #(lf)| where Date >= ago(" & Number.ToText(Days_Since_Filter,"D",Culture) &"d)", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null]),
+				    // Renames columns for improved readability
+				    #"Renamed Columns For Readability" = Table.RenameColumns(#"Retrieved Commits From ADX",{{"ArtifactName", "Artifact Name"}, {"BranchName", "Branch Name"}, {"CommittedBy", "Committed By"}})
 				in
-				    #"Renamed Columns"
+				    #"Renamed Columns For Readability"
 
 	annotation PBI_NavigationStepName = Navigation
 

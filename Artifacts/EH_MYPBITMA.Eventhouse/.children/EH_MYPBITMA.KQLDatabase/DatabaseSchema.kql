@@ -424,7 +424,12 @@ pbir_inspector_bronze
         toint(split(Time, ":")[1]), 
         toint(split(Time, ":")[2])
     )
-    | join kind=leftouter (
+    | join kind=leftouter (Commits)
+    on $left.CommitsId == $right.Id
+    //| where BranchName == 'uat'
+    | summarize MaxDateTime = max(DateTime) by TestsId, RepositoryId, BranchName
+    // now join with text results
+    | join kind=leftouter(
         test_results_silver_combined
         | extend DateTime = make_datetime(
             datetime_part("year", Date), 
@@ -434,12 +439,11 @@ pbir_inspector_bronze
             toint(split(Time, ":")[1]), 
             toint(split(Time, ":")[2])
         )
-        | summarize MaxDateTime = max(DateTime) by TestsId
     ) on $left.TestsId == $right.TestsId
     | extend IsLatestTestResult = iff(DateTime == MaxDateTime, 1, 0)
     | project-away MaxDateTime
     | extend PassedStatus = iif(Passed==1,'Passed','Failed')
-    | project Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, PassedStatus, Date, Time, IsLatestTestResult
+    | project Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, PassedStatus, Date, Time, IsLatestTestResult, RepositoryId, BranchName
 }
 .create-or-alter materialized-view  Tests on table tests_silver_combined { tests_silver_combined
     | summarize take_any(*) by Id, BusinessKey, Name, Description, Source }

@@ -1,0 +1,950 @@
+createOrReplace
+
+	model Model
+		culture: en-US
+		defaultPowerBIDataSourceVersion: powerBI_V3
+		sourceQueryCulture: en-US
+		dataAccessOptions
+			legacyRedirects
+			returnErrorValuesAsNull
+
+		table 'Test Results'
+			lineageTag: f7e2fb90-38e1-44f1-bff2-dbc63ff1bfcd
+
+			column Id
+				dataType: int64
+				formatString: 0
+				sourceProviderType: bigint
+				lineageTag: 57d8ec15-9c6f-4372-bab9-a600cefcc724
+				summarizeBy: none
+				sourceColumn: Id
+
+				annotation SummarizationSetBy = Automatic
+
+			column CommitsId
+				dataType: int64
+				isHidden
+				formatString: 0
+				isAvailableInMdx: false
+				sourceProviderType: bigint
+				lineageTag: fd5a39ff-f541-417a-a64c-3cec003b73a5
+				summarizeBy: none
+				sourceColumn: CommitsId
+
+				annotation SummarizationSetBy = Automatic
+
+			column TestsId
+				dataType: int64
+				isHidden
+				formatString: 0
+				isAvailableInMdx: false
+				sourceProviderType: bigint
+				lineageTag: 36204cec-516b-4549-a85b-15184773bf46
+				summarizeBy: none
+				sourceColumn: TestsId
+
+				annotation SummarizationSetBy = Automatic
+
+			column SeverityId
+				dataType: int64
+				isHidden
+				formatString: 0
+				isAvailableInMdx: false
+				sourceProviderType: int
+				lineageTag: 325fd269-4e3f-48e5-b04f-186b2959323e
+				summarizeBy: none
+				sourceColumn: SeverityId
+
+				annotation SummarizationSetBy = Automatic
+
+			column Actual
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: 8871cc55-aa68-4222-a129-c34e62ae812b
+				summarizeBy: none
+				sourceColumn: Actual
+
+				annotation SummarizationSetBy = Automatic
+
+			column Expected
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: c4153837-64a7-4785-b52b-3338688cb609
+				summarizeBy: none
+				sourceColumn: Expected
+
+				annotation SummarizationSetBy = Automatic
+
+			column Details
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: 2f1fe3ee-1aaa-4f41-8ab5-7459dad1cc94
+				summarizeBy: none
+				sourceColumn: Details
+
+				annotation SummarizationSetBy = Automatic
+
+			column Passed
+				dataType: int64
+				formatString: 0
+				sourceProviderType: int
+				lineageTag: 38593ea3-7dc3-42f9-908c-674aaec3f7ea
+				summarizeBy: none
+				sourceColumn: Passed
+
+				annotation SummarizationSetBy = Automatic
+
+			column Date
+				dataType: dateTime
+				isHidden
+				formatString: General Date
+				isAvailableInMdx: false
+				sourceProviderType: datetimeoffset
+				lineageTag: 19aa098f-cf67-45d5-be83-b022899364ae
+				summarizeBy: none
+				sourceColumn: Date
+
+				annotation SummarizationSetBy = Automatic
+
+			column Time
+				dataType: dateTime
+				formatString: Long Time
+				lineageTag: 059d5a63-410f-4bff-9bbe-bb9f49521e56
+				summarizeBy: none
+				sourceColumn: Time
+
+				changedProperty = DataType
+
+				annotation SummarizationSetBy = Automatic
+
+				annotation UnderlyingDateTimeDataType = Time
+
+			column Status
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: d114d801-4bd0-42c2-a4e6-6cce3c130df4
+				summarizeBy: none
+				sourceColumn: Status
+
+				annotation SummarizationSetBy = Automatic
+
+			column IsLatestTestResult
+				dataType: int64
+				formatString: 0
+				sourceProviderType: bigint
+				lineageTag: 8d2e2c64-3e1e-48f8-8a9e-4a66ffdc2b94
+				summarizeBy: none
+				sourceColumn: IsLatestTestResult
+
+				annotation SummarizationSetBy = User
+
+			column RepositoryId
+				dataType: string
+				isHidden
+				sourceProviderType: nvarchar(max)
+				lineageTag: 7d691349-ff78-4319-a6b7-247252c20b2d
+				summarizeBy: none
+				sourceColumn: RepositoryId
+
+				changedProperty = IsHidden
+
+				annotation SummarizationSetBy = Automatic
+
+			column BranchName
+				dataType: string
+				isHidden
+				sourceProviderType: nvarchar(max)
+				lineageTag: 6b24aadc-d7eb-4d4b-a079-581e5dffe79c
+				summarizeBy: none
+				sourceColumn: BranchName
+
+				changedProperty = IsHidden
+
+				annotation SummarizationSetBy = Automatic
+
+			partition 'Test Results' = m
+				mode: directQuery
+				queryGroup: KQL
+				source =
+						let
+						    // Connects to Azure Data Explorer and retrieves test results data using the provided URL, database, and query with a filter for recent dates
+						    #"Retrieved Test Results Data" = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "fnGetTestResults_10_25_2025 #(lf)| where Date >= ago(" & Number.ToText(Days_Since_Filter,"D",Culture) & "d)", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null]),
+						
+						    // Renames the 'PassedStatus' column to 'Status' for easier understanding or downstream use
+						    #"Renamed PassedStatus To Status" = Table.RenameColumns(#"Retrieved Test Results Data",{{"PassedStatus", "Status"}})
+						in
+						    #"Renamed PassedStatus To Status"
+
+			annotation PBI_ResultType = Table
+
+			annotation PBI_NavigationStepName = Navigation
+
+		table Tests
+			lineageTag: cf4d32df-dd3a-4d9c-b30e-2304324bb74c
+
+			column Id
+				dataType: int64
+				isKey
+				formatString: 0
+				sourceProviderType: bigint
+				lineageTag: e1a5067f-dcdc-47ea-8904-13f6e0953a84
+				summarizeBy: none
+				sourceColumn: Id
+
+				annotation SummarizationSetBy = Automatic
+
+			column BusinessKey
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: 6c648d6a-c5f0-44bc-a5c1-283f9dd6324b
+				summarizeBy: none
+				sourceColumn: BusinessKey
+
+				annotation SummarizationSetBy = Automatic
+
+			column Name
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: ba9b04f2-c076-43a7-b82d-b45a0bc47fec
+				summarizeBy: none
+				sourceColumn: Name
+
+				annotation SummarizationSetBy = Automatic
+
+			column Description
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: c36acf43-9f8b-4000-94bd-42ce3115bc03
+				summarizeBy: none
+				sourceColumn: Description
+
+				annotation SummarizationSetBy = Automatic
+
+			column Source
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: 463dfbe0-9bb7-4aca-9bfb-7d632d20eca2
+				summarizeBy: none
+				sourceColumn: Source
+
+				annotation SummarizationSetBy = Automatic
+
+			partition Tests = m
+				mode: directQuery
+				queryGroup: KQL
+				source =
+						let
+						    // Connects to Azure Data Explorer cluster and retrieves the 'Tests' table based on specified parameters
+						    #"Retrieved Tests Table From Azure Cluster" = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "Tests", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null])
+						in
+						    #"Retrieved Tests Table From Azure Cluster"
+
+			annotation PBI_NavigationStepName = Navigation
+
+			annotation PBI_ResultType = Table
+
+		table Commits
+			lineageTag: a75af6c0-44fb-4f4e-a03d-c76bd32fca71
+
+			column Id
+				dataType: int64
+				isKey
+				formatString: 0
+				sourceProviderType: bigint
+				lineageTag: 94c45391-1571-40cb-85e1-2132ca949167
+				summarizeBy: none
+				sourceColumn: Id
+
+				annotation SummarizationSetBy = Automatic
+
+			column RepositoryId
+				dataType: string
+				isHidden
+				isAvailableInMdx: false
+				sourceProviderType: nvarchar(max)
+				lineageTag: 4082822f-a1d2-4a66-8f98-8d234015545b
+				summarizeBy: none
+				sourceColumn: RepositoryId
+
+				changedProperty = IsHidden
+
+				annotation SummarizationSetBy = Automatic
+
+			column CommitId
+				dataType: string
+				isHidden
+				isAvailableInMdx: false
+				sourceProviderType: nvarchar(max)
+				lineageTag: a511db79-b496-4472-9c80-853d8a363292
+				summarizeBy: none
+				sourceColumn: CommitId
+
+				changedProperty = IsHidden
+
+				annotation SummarizationSetBy = Automatic
+
+			column 'Branch Name'
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: 7195670e-d74d-4832-b37c-56636446de56
+				summarizeBy: none
+				sourceColumn: Branch Name
+
+				annotation SummarizationSetBy = Automatic
+
+			column LogicalId
+				dataType: string
+				isHidden
+				isAvailableInMdx: false
+				sourceProviderType: nvarchar(max)
+				lineageTag: dfcf9adf-20f0-4209-8e24-78b66d1769e1
+				summarizeBy: none
+				sourceColumn: LogicalId
+
+				changedProperty = IsHidden
+
+				annotation SummarizationSetBy = Automatic
+
+			column 'Artifact Name'
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: cb08672a-a8e5-4df6-a7e4-7c2522961dac
+				summarizeBy: none
+				sourceColumn: Artifact Name
+
+				annotation SummarizationSetBy = Automatic
+
+			column Type
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: a1902c32-f844-405c-83bd-84afdf498d3e
+				summarizeBy: none
+				sourceColumn: Type
+
+				annotation SummarizationSetBy = Automatic
+
+			column Date
+				dataType: dateTime
+				isHidden
+				formatString: General Date
+				isAvailableInMdx: false
+				sourceProviderType: datetimeoffset
+				lineageTag: 0e88de4b-3928-41d8-b00d-ab525be9a847
+				summarizeBy: none
+				sourceColumn: Date
+
+				changedProperty = IsHidden
+
+				annotation SummarizationSetBy = Automatic
+
+			column 'Committed By'
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: 566b927d-4cd4-4e31-a14e-1c7e5f83fa45
+				summarizeBy: none
+				sourceColumn: Committed By
+
+				annotation SummarizationSetBy = Automatic
+
+			partition Commits = m
+				mode: directQuery
+				queryGroup: KQL
+				source =
+						let
+						    // Connects to Azure Data Explorer and queries commits within filtered days
+						    #"Retrieved Commits From ADX" = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "Commits #(lf)| where Date >= ago(" & Number.ToText(Days_Since_Filter,"D",Culture) &"d)", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null]),
+						    // Renames columns for improved readability
+						    #"Renamed Columns For Readability" = Table.RenameColumns(#"Retrieved Commits From ADX",{{"ArtifactName", "Artifact Name"}, {"BranchName", "Branch Name"}, {"CommittedBy", "Committed By"}})
+						in
+						    #"Renamed Columns For Readability"
+
+			annotation PBI_NavigationStepName = Navigation
+
+			annotation PBI_ResultType = Table
+
+		table Severity
+			lineageTag: f6841e3c-6f2a-41f2-85ca-0ba3c7543c75
+
+			column SeverityId
+				dataType: int64
+				isHidden
+				isKey
+				formatString: 0
+				isAvailableInMdx: false
+				lineageTag: b8e952b4-8829-465d-9532-51785d8262cc
+				summarizeBy: none
+				sourceColumn: SeverityId
+
+				annotation SummarizationSetBy = Automatic
+
+			column State
+				dataType: string
+				lineageTag: c9b9c3cf-18ba-4de7-abe3-45a86160b445
+				summarizeBy: none
+				sourceColumn: State
+				sortByColumn: Order
+
+				changedProperty = SortByColumn
+
+				annotation SummarizationSetBy = Automatic
+
+			column Order
+				dataType: int64
+				formatString: 0
+				lineageTag: 2cfa197e-c73d-4701-b3f8-8dd07c5377f0
+				summarizeBy: none
+				sourceColumn: Order
+
+				annotation SummarizationSetBy = Automatic
+
+			partition Severity = m
+				mode: import
+				source =
+						let
+						    // Create a table with columns for severity and states
+						    #"Created Severity State Table" = #table(
+						        {"SeverityId", "State","Order"},
+						        {
+						            {1, "Informational",3},
+						            {2, "Warning",2},
+						            {3, "Error",1}
+						        }
+						    ),
+						    // Define appropriate data types for each column in the table
+						    #"Updated Column Types In Table" = Table.TransformColumnTypes(
+						        #"Created Severity State Table",
+						        {
+						            {"SeverityId", Int64.Type},
+						            {"State", type text},
+						            {"Order", Int32.Type}
+						        }
+						    )
+						in
+						    #"Updated Column Types In Table"
+
+			annotation PBI_NavigationStepName = Navigation
+
+			annotation PBI_ResultType = Table
+
+		table Timezones
+			lineageTag: 554066d5-eba2-4388-8c0b-21d723be4a55
+
+			column 'Timezone ID'
+				dataType: int64
+				formatString: 0
+				lineageTag: 1c8ae096-3b52-4c7c-98f6-020f84e678fb
+				summarizeBy: none
+				sourceColumn: Timezone ID
+
+				annotation SummarizationSetBy = Automatic
+
+			column Name
+				dataType: string
+				lineageTag: c0406bbd-2bec-4aec-8ccc-f0cc8f9925a2
+				summarizeBy: none
+				sourceColumn: Name
+
+				annotation SummarizationSetBy = Automatic
+
+			column 'Display Name'
+				dataType: string
+				lineageTag: 895028ec-234f-46d0-b7f4-23ae40b737ca
+				summarizeBy: none
+				sourceColumn: Display Name
+
+				annotation SummarizationSetBy = Automatic
+
+			column 'UTC Offset'
+				dataType: string
+				lineageTag: 8477384c-63a4-44ae-94d7-4e3e7f021c7f
+				summarizeBy: none
+				sourceColumn: UTC Offset
+
+				annotation SummarizationSetBy = Automatic
+
+			column 'DAX UTC Offset'
+				dataType: double
+				lineageTag: 6a6ed946-61c9-44fe-bffe-f9709f0c68f5
+				summarizeBy: none
+				sourceColumn: DAX UTC Offset
+
+				annotation SummarizationSetBy = Automatic
+
+				annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+			column 'Timezone Selection'
+				dataType: string
+				lineageTag: 69176bc9-b38e-4cc7-9808-a07feed92013
+				summarizeBy: none
+				sourceColumn: Timezone Selection
+
+				annotation SummarizationSetBy = Automatic
+
+			partition Timezones = m
+				mode: import
+				source = ```
+						let
+						    // Specify the required column names for the timezone table
+						    #"Defined Column Names" = {"Timezone ID", "Name", "Timezone Selection", "UTC Offset"},  
+						  
+						    // Specify each row containing timezone data
+						    #"Listed Rows" = {  
+						        {0,"Dateline Standard Time","(UTC-12:00) International Date Line West","-12:00"},
+						        {1,"UTC-11","(UTC-11:00) Coordinated Universal Time -11","-11:00"},
+						        {2,"Hawaiian Standard Time","(UTC-10:00) Hawaii","-10:00"},
+						        {3,"Alaskan Standard Time","(UTC-09:00) Alaska","-09:00"},
+						        {4,"Pacific Standard Time","(UTC-08:00) Pacific Time (US and Canada)","-08:00"},
+						        {5,"Pacific Standard Time (Mexico)","(UTC-08:00) Baja California","-08:00"},
+						        {6,"Mountain Standard Time","(UTC-07:00) Mountain Time (US and Canada)","-07:00"},
+						        {7,"Mountain Standard Time (Mexico)","(UTC-07:00) Chihuahua, La Paz, Mazatlan","-07:00"},
+						        {8,"US Mountain Standard Time","(UTC-07:00) Arizona","-07:00"},
+						        {9,"Canada Central Standard Time","(UTC-06:00) Saskatchewan","-06:00"},
+						        {10,"Central America Standard Time","(UTC-06:00) Central America","-06:00"},
+						        {11,"Central Standard Time","(UTC-06:00) Central Time (US and Canada)","-06:00"},
+						        {12,"Central Standard Time (Mexico)","((UTC-06:00) Guadalajara, Mexico City, Monterrey","-06:00"},
+						        {13,"Eastern Standard Time","(UTC-05:00) Eastern Time (US and Canada)","-05:00"},
+						        {14,"SA Pacific Standard Time","(UTC-05:00) Bogota, Lima, Quito","-05:00"},
+						        {15,"US Eastern Standard Time","(UTC-05:00) Indiana (East)","-05:00"},
+						        {16,"Venezuela Standard Time","(UTC-04:00) Caracas","-04:00"},
+						        {17,"Atlantic Standard Time","(UTC-04:00) Atlantic Time (Canada)","-04:00"},
+						        {18,"Central Brazilian Standard Time","(UTC-04:00) Cuiaba","-04:00"},
+						        {19,"Pacific SA Standard Time","(UTC-04:00) Santiago","-04:00"},
+						        {20,"SA Western Standard Time","(UTC-04:00) Georgetown, La Paz, Manaus, San Juan","-04:00"},
+						        {21,"Paraguay Standard Time","(UTC-04:00) Asuncion","-04:00"},
+						        {22,"Newfoundland Standard Time","(UTC-03:30) Newfoundland","-3:30"},
+						        {23,"E. South America Standard Time","(UTC-03:00) Brasilia","-03:00"},
+						        {24,"Greenland Standard Time","(UTC-03:00) Greenland","-03:00"},
+						        {25,"Montevideo Standard Time","(UTC-03:00) Montevideo","-03:00"},
+						        {26,"SA Eastern Standard Time","(UTC-03:00) Cayenne, Fortaleza","-03:00"},
+						        {27,"Argentina Standard Time","(UTC-03:00) Buenos Aires","-03:00"},
+						        {28,"Mid-Atlantic Standard Time","(UTC-02:00) Mid-Atlantic","-02:00"},
+						        {29,"UTC-02","(UTC-02:00) Coordinated Universal Time -02","-02:00"},
+						        {30,"Azores Standard Time","(UTC-01:00) Azores","-01:00"},
+						        {31,"Cape Verde Standard Time","(UTC-01:00) Cabo Verde Is.","-01:00"},
+						        {32,"GMT Standard Time","(UTC) Dublin, Edinburgh, Lisbon, London","0:00"},
+						        {33,"Greenwich Standard Time","(UTC) Monrovia, Reykjavik","0:00"},
+						        {34,"Morocco Standard Time","(UTC) Casablanca","0:00"},
+						        {35,"UTC","(UTC) Coordinated Universal Time","0:00"},
+						        {36,"Central Europe Standard Time","(UTC+01:00) Belgrade, Bratislava, Budapest, Ljubljana, Prague","+01:00"},
+						        {37,"Central European Standard Time","(UTC+01:00) Sarajevo, Skopje, Warsaw, Zagreb","+01:00"},
+						        {38,"Romance Standard Time","(UTC+01:00) Brussels, Copenhagen, Madrid, Paris","+01:00"},
+						        {39,"W. Central Africa Standard Time","(UTC+01:00) West Central Africa","+01:00"},
+						        {40,"W. Europe Standard Time","(UTC+01:00) Amsterdam, Berlin, Bern, Rome, Stockholm, Vienna","+01:00"},
+						        {41,"Namibia Standard Time","(UTC+01:00) Windhoek","+01:00"},
+						        {42,"E. Europe Standard Time","(UTC+02:00) Minsk","+02:00"},
+						        {43,"Egypt Standard Time","(UTC+02:00) Cairo","+02:00"},
+						        {44,"FLE Standard Time","(UTC+02:00) Helsinki, Kyiv, Riga, Sofia, Tallinn, Vilnius","+02:00"},
+						        {45,"GTB Standard Time","(UTC+02:00) Athens, Bucharest","+02:00"},
+						        {46,"Israel Standard Time","(UTC+02:00) Jerusalem","+02:00"},
+						        {47,"Jordan Standard Time","(UTC+02:00) Amman","+02:00"},
+						        {48,"Middle East Standard Time","(UTC+02:00) Beirut","+02:00"},
+						        {49,"South Africa Standard Time","(UTC+02:00) Harare, Pretoria","+02:00"},
+						        {50,"Syria Standard Time","(UTC+02:00) Damascus","+02:00"},
+						        {51,"Turkey Standard Time","(UTC+03:00) Istanbul","+03:00"},
+						        {52,"Arab Standard Time","(UTC+03:00) Kuwait, Riyadh","+03:00"},
+						        {53,"Arabic Standard Time","(UTC+03:00) Baghdad","+03:00"},
+						        {54,"E. Africa Standard Time","(UTC+03:00) Nairobi","+03:00"},
+						        {55,"Kaliningrad Standard Time","(UTC+03:00) Kaliningrad","+03:00"},
+						        {56,"Iran Standard Time","(UTC+03:30) Tehran","+03:30"},
+						        {57,"Russian Standard Time","(UTC+03:00) Moscow, St. Petersburg, Volgograd","+03:00"},
+						        {58,"Arabian Standard Time","(UTC+04:00) Abu Dhabi, Muscat","+04:00"},
+						        {59,"Azerbaijan Standard Time","(UTC+04:00) Baku","+04:00"},
+						        {60,"Caucasus Standard Time","(UTC+04:00) Yerevan","+04:00"},
+						        {61,"Georgian Standard Time","(UTC+04:00) Tbilisi","+04:00"},
+						        {62,"Mauritius Standard Time","(UTC+04:00) Port Louis","+04:00"},
+						        {63,"Afghanistan Standard Time","(UTC+04:30) Kabul","+04:30"},
+						        {64,"West Asia Standard Time","(UTC+05:00) Toshkent","+05:00"},
+						        {65,"Pakistan Standard Time","(UTC+05:00) Islamabad, Karachi","+05:00"},
+						        {66,"India Standard Time","(UTC+05:30) Chennai, Kolkata, Mumbai, New Delhi","+05:30"},
+						        {67,"Sri Lanka Standard Time","(UTC+05:30) Sri Jayawardenepura","+05:30"},
+						        {68,"Nepal Standard Time","(UTC+05:45) Kathmandu","+05:45"},
+						        {69,"Ekaterinburg Standard Time","(UTC+05:00) Ekaterinburg","+05:00"},
+						        {70,"Central Asia Standard Time","(UTC+06:00) Astana","+06:00"},
+						        {71,"Bangladesh Standard Time","(UTC+06:00) Dhaka","+06:00"},
+						        {72,"Myanmar Standard Time","(UTC+06:30) Yangon (Rangoon)","+06:30"},
+						        {73,"N. Central Asia Standard Time","(UTC+07:00) Novosibirsk","+07:00"},
+						        {74,"SE Asia Standard Time","(UTC+07:00) Bangkok, Hanoi, Jakarta","+07:00"},
+						        {75,"North Asia Standard Time","(UTC+07:00) Krasnoyarsk","+07:00"},
+						        {76,"China Standard Time","(UTC+08:00) Beijing, Chongqing, Hong Kong, Urumqi","+08:00"},
+						        {77,"Singapore Standard Time","(UTC+08:00) Kuala Lumpur, Singapore","+08:00"},
+						        {78,"Taipei Standard Time","(UTC+08:00) Taipei","+08:00"},
+						        {79,"W. Australia Standard Time","(UTC+08:00) Perth","+08:00"},
+						        {80,"Ulaanbaatar Standard Time","(UTC+08:00) Ulaanbaatar","+08:00"},
+						        {81,"North Asia East Standard Time","(UTC+08:00) Irkutsk","+08:00"},
+						        {82,"Korea Standard Time","(UTC+09:00) Seoul","+09:00"},
+						        {83,"Tokyo Standard Time","(UTC+09:00) Osaka, Sapporo, Tokyo","+09:00"},
+						        {84,"AUS Central Standard Time","(UTC+09:30) Darwin","+09:30"},
+						        {85,"Cen. Australia Standard Time","(UTC+09:30) Adelaide","+09:30"},
+						        {86,"Yakutsk Standard Time","(UTC+09:00) Yakutsk","+09:00"},
+						        {87,"AUS Eastern Standard Time","(UTC+10:00) Canberra, Melbourne, Sydney","+10:00"},
+						        {88,"E. Australia Standard Time","(UTC+10:00) Brisbane","+10:00"},
+						        {89,"Tasmania Standard Time","(UTC+10:00) Hobart","+10:00"},
+						        {90,"West Pacific Standard Time","(UTC+10:00) Guam, Port Moresby","+10:00"},
+						        {91,"Vladivostok Standard Time","(UTC+10:00) Vladivostok","+10:00"},
+						        {92,"Central Pacific Standard Time","(UTC+11:00) Solomon Is., New Caledonia","+11:00"},
+						        {93,"Magadan Standard Time","(UTC+12:00) Magadan","+12:00"},
+						        {94,"Fiji Standard Time","(UTC+12:00) Fiji","+12:00"},
+						        {95,"New Zealand Standard Time","(UTC+12:00) Auckland, Wellington","+12:00"},
+						        {96,"UTC+12","(UTC+12:00) Coordinated Universal Time +12","+12:00"},
+						        {97,"Tonga Standard Time","(UTC+13:00) Nuku'alofa","+13:00"},
+						        {98,"Samoa Standard Time","(UTC-11:00) Samoa","-11:00"}
+						    },  
+						  
+						    // Construct the table with the defined columns and rows
+						    #"Created TimeZone Table" = #table(#"Defined Column Names", #"Listed Rows") , 
+						
+						    // Change the data types of select columns for accuracy
+						    #"Transformed Column Types" = Table.TransformColumnTypes(#"Created TimeZone Table",{{"Timezone ID", Int64.Type}, {"Name", type text}, {"UTC Offset", type text}}),
+						
+						    // Remove unwanted characters from the Name column
+						    #"Cleaned Name Text" = Table.TransformColumns(#"Transformed Column Types",{{"Name", Text.Clean, type text}}),
+						
+						    // Add a column for today's fixed UTC date
+						    #"Inserted Fixed UTC Now" = Table.AddColumn(#"Cleaned Name Text", "Fixed UTC Now", each Date.AddDays(DateTimeZone.FixedUtcNow(),0), type datetimezone),
+						
+						    // Convert the Fixed UTC Now column to date data type
+						    #"Converted Fixed UTC Now to Date" = Table.TransformColumnTypes(#"Inserted Fixed UTC Now",{{"Fixed UTC Now", type date}}),
+						
+						    // Create a column showing the start of US daylight savings for given year
+						    #"Calculated Start of US Daylight Savings" = Table.AddColumn(#"Converted Fixed UTC Now to Date", "Start of US Daylight Savings", each Date.StartOfWeek(#date(Date.Year([Fixed UTC Now]), 3, 14), Day.Sunday), type date),
+						
+						    // Create a column showing the end date of US daylight savings for the year
+						    #"Calculated End of US Daylight Savings" = Table.AddColumn(#"Calculated Start of US Daylight Savings", "End of US Daylight Savings", each Date.StartOfWeek(#date(Date.Year([Fixed UTC Now]), 11, 7), Day.Sunday), type date),
+						
+						    // Indicate whether the date falls inside US daylight savings period
+						    #"Determined US Daylight Savings Applicability" = Table.AddColumn(#"Calculated End of US Daylight Savings", "Is Daylight Savings Time in United States", each if [Fixed UTC Now] >= [Start of US Daylight Savings] and [Fixed UTC Now] <= [End of US Daylight Savings] then true else false, type logical),
+						
+						    // Split the UTC Offset into hours and minutes for further calculations
+						    #"Split UTC Offset into Hours Minutes" = Table.SplitColumn(#"Determined US Daylight Savings Applicability", "UTC Offset", Splitter.SplitTextByEachDelimiter({":"}, QuoteStyle.Csv, false), {"UTC Offset - Hours", "UTC Offset - Minutes"}, null),
+						
+						    // Convert both offset values to integers for calculations
+						    #"Converted Offset Strings to Integers" = Table.TransformColumnTypes(#"Split UTC Offset into Hours Minutes",{{"UTC Offset - Hours", Int64.Type}, {"UTC Offset - Minutes", Int64.Type}}),
+						
+						    // Add a column that conditionally adjusts the timezone hour according to daylight savings 
+						    #"Calculated Adjusted UTC Offset Hours" = Table.AddColumn(#"Converted Offset Strings to Integers", "Adjust Hours", each if [Timezone ID] = 2 or [Timezone ID] = 3 or [Timezone ID] = 4 or [Timezone ID] = 6 or [Timezone ID] = 11 or [Timezone ID] = 13 or [Timezone ID] = 15 then if [Is Daylight Savings Time in United States] then [#"UTC Offset - Hours"] + 1 else [#"UTC Offset - Hours"] else [#"UTC Offset - Hours"], Int32.Type),
+						
+						    // Add a new column for adjusted timezone display name based on daylight savings 
+						    #"Set Adjusted Display Name" = Table.AddColumn(#"Calculated Adjusted UTC Offset Hours", "Adjust Name", each if [Timezone ID] = 2 or [Timezone ID] = 3 or [Timezone ID] = 4 or [Timezone ID] = 6 or [Timezone ID] = 11 or [Timezone ID] = 13 or [Timezone ID] = 15 then if [Is Daylight Savings Time in United States] then Text.Replace([Name],"Standard","Daylight") else [Name] else [Name], type text),
+						
+						    // Rename the Adjust Name column to Display Name for presentation
+						    #"Renamed Display Name Column" = Table.RenameColumns(#"Set Adjusted Display Name",{{"Adjust Name", "Display Name"}}),
+						
+						    // Add a text column to represent offset minutes, defaulting to "00" where needed
+						    #"Formatted UTC Offset Minutes" = Table.AddColumn(#"Renamed Display Name Column", "UTC Offset - Right", each if [#"UTC Offset - Minutes"] = 0 or [#"UTC Offset - Minutes"] = null then "00" else Number.ToText([#"UTC Offset - Minutes"],"G",Culture), type text),
+						
+						    // Concatenate the hour and minutes to form a complete UTC offset string
+						    #"Generated Adjusted UTC Offset Text" = Table.AddColumn(#"Formatted UTC Offset Minutes", "UTC Offset", each Number.ToText([Adjust Hours],"G",Culture) & ":" & [#"UTC Offset - Right"],type text),
+						
+						    // Replace all instances of 30 minutes with 5 in the UTC minutes column
+						    #"Changed UTC Offset Minutes 30 to 5" = Table.ReplaceValue(#"Generated Adjusted UTC Offset Text",30,5,Replacer.ReplaceValue,{"UTC Offset - Minutes"}),
+						
+						    // Replace null with zero in the UTC minutes column
+						    #"Changed Null Offset Minutes to Zero" = Table.ReplaceValue(#"Changed UTC Offset Minutes 30 to 5",null,0,Replacer.ReplaceValue,{"UTC Offset - Minutes"}),
+						
+						    // Combine hours and minutes into a single string column to be used as DAX UTC offset
+						    #"Merged Adjusted Hours and Minutes Column" = Table.CombineColumns(Table.TransformColumnTypes(#"Changed Null Offset Minutes to Zero", {{"Adjust Hours", type text}, {"UTC Offset - Minutes", type text}}, "en-US"),{"Adjust Hours", "UTC Offset - Minutes"},Combiner.CombineTextByDelimiter(".", QuoteStyle.None),"Merged"),
+						
+						    // Change the types of columns for display and calculation accuracy
+						    #"Changed Types for Final Table Columns" = Table.TransformColumnTypes(#"Merged Adjusted Hours and Minutes Column",{{"Timezone Selection", type text}, {"Display Name", type text},{"Merged", type number}}),
+						
+						    // Rename the Merged column to DAX UTC Offset for DAX compatibility
+						    #"Renamed Merged to DAX UTC Offset" = Table.RenameColumns(#"Changed Types for Final Table Columns",{{"Merged", "DAX UTC Offset"}}),
+						
+						    // Arrange the order of columns for clarity and usability
+						    #"Reordered Final Output Columns" = Table.ReorderColumns(#"Renamed Merged to DAX UTC Offset",{"Timezone ID", "Name", "Display Name", "Timezone Selection", "UTC Offset", "DAX UTC Offset", "Fixed UTC Now", "Is Daylight Savings Time in United States", "UTC Offset - Hours", "UTC Offset - Right"},MissingField.Ignore),
+						
+						    // Remove intermediate calculation columns before final output
+						    #"Removed Calculation Columns" = Table.RemoveColumns(#"Reordered Final Output Columns",{"Fixed UTC Now", "Is Daylight Savings Time in United States", "UTC Offset - Hours", "UTC Offset - Right", "Start of US Daylight Savings", "End of US Daylight Savings"},MissingField.Ignore)
+						in
+						    #"Removed Calculation Columns"
+						```
+
+			annotation PBI_NavigationStepName = Navigation
+
+			annotation PBI_ResultType = Table
+
+		table Calendar
+			lineageTag: 5d7b1ab3-e85e-4d96-a842-3184fde29747
+			dataCategory: Time
+
+			column CalendarID
+				dataType: int64
+				isHidden
+				formatString: 0
+				isAvailableInMdx: false
+				sourceProviderType: int
+				lineageTag: 73b81816-16c2-464f-be53-a6d511781de8
+				summarizeBy: none
+				sourceColumn: CalendarID
+
+				changedProperty = IsHidden
+
+				annotation SummarizationSetBy = Automatic
+
+			column Date
+				dataType: dateTime
+				isKey
+				formatString: mmmm d\, yyyy
+				isAvailableInMdx: false
+				sourceProviderType: datetimeoffset
+				lineageTag: 62a108c0-bd2a-4155-aea6-f7dc95c8f581
+				summarizeBy: none
+				sourceColumn: Date
+
+				changedProperty = IsHidden
+
+				annotation SummarizationSetBy = Automatic
+
+				annotation PBI_FormatHint = {"isDateTimeCustom":true}
+
+			column Day
+				dataType: int64
+				formatString: 0
+				sourceProviderType: bigint
+				lineageTag: 2eff7f12-3950-4b31-9ac2-8d02b933e062
+				summarizeBy: none
+				sourceColumn: Day
+
+				annotation SummarizationSetBy = Automatic
+
+			column Month
+				dataType: int64
+				formatString: 0
+				sourceProviderType: bigint
+				lineageTag: c0a68cb2-52cd-48b6-b41a-ed9b076e42c4
+				summarizeBy: none
+				sourceColumn: Month
+
+				annotation SummarizationSetBy = Automatic
+
+			column 'Month Name'
+				dataType: string
+				sourceProviderType: nvarchar(max)
+				lineageTag: 256e4cf4-712d-4c1b-8ca4-6a3bedcf6648
+				summarizeBy: none
+				sourceColumn: Month Name
+
+				annotation SummarizationSetBy = Automatic
+
+			column MonthYearYYYYMM
+				dataType: int64
+				isHidden
+				formatString: 0
+				isAvailableInMdx: false
+				sourceProviderType: bigint
+				lineageTag: 08b883ef-b208-47cd-9a4d-5cbd026d20aa
+				summarizeBy: none
+				sourceColumn: MonthYearYYYYMM
+
+				changedProperty = IsHidden
+
+				annotation SummarizationSetBy = Automatic
+
+			column Year
+				dataType: int64
+				formatString: 0
+				sourceProviderType: bigint
+				lineageTag: 8167a83b-b998-4fd3-9d0a-2e840800aaf6
+				summarizeBy: none
+				sourceColumn: Year
+
+				annotation SummarizationSetBy = Automatic
+
+			partition Calendar = m
+				mode: directQuery
+				queryGroup: KQL
+				source =
+						let
+						    // Connects to Azure Data Explorer and runs a query to generate calendar data within the filtered range
+						    #"Fetched Calendar Data From Query" = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "range Date from toscalar(Commits | where Date >= ago(" & Number.ToText(Days_Since_Filter,"D",Culture) &  "d) | summarize min(Date)) to now() step 1d#(lf)| extend #(lf)    Day = dayofmonth(Date),#(lf)    Month = getmonth(Date),#(lf)    Year = getyear(Date),#(lf)    MonthName = case(#(lf)        getmonth(Date) == 1, ""January"",#(lf)        getmonth(Date) == 2, ""February"",#(lf)        getmonth(Date) == 3, ""March"",#(lf)        getmonth(Date) == 4, ""April"",#(lf)        getmonth(Date) == 5, ""May"",#(lf)        getmonth(Date) == 6, ""June"",#(lf)        getmonth(Date) == 7, ""July"",#(lf)        getmonth(Date) == 8, ""August"",#(lf)        getmonth(Date) == 9, ""September"",#(lf)        getmonth(Date) == 10, ""October"",#(lf)        getmonth(Date) == 11, ""November"",#(lf)        getmonth(Date) == 12, ""December"",#(lf)        ""Unknown""#(lf)    ),#(lf)    MonthYearYYYYMM = getyear(Date) * 100 + getmonth(Date),#(lf)    CalendarID = toint(format_datetime(Date, 'yyyyMMdd'))#(lf)| project CalendarID, Date, Day, Month, MonthName, MonthYearYYYYMM, Year", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null]),
+						    // Renames the MonthName column to Month Name for better clarity and consistency
+						    #"Renamed Month Name Column" = Table.RenameColumns(#"Fetched Calendar Data From Query",{{"MonthName", "Month Name"}})
+						in
+						    #"Renamed Month Name Column"
+
+			annotation PBI_NavigationStepName = Navigation
+
+			annotation PBI_ResultType = Table
+
+		table _Measures
+			lineageTag: 26fc9b1c-2ab2-4114-acb2-3ab870d8d183
+
+			measure 'Failed Tests' = CALCULATE(COUNTROWS('Test Results'),KEEPFILTERS('Test Results'[Passed]=0))+0
+				formatString: 0
+				lineageTag: 7105ff61-a291-4083-8402-0c1c45ab51e5
+
+			measure 'Number of Tests' = COUNTROWS('Test Results') + 0
+				formatString: #,0
+				lineageTag: 239caede-a151-4dcf-a15e-a1c7cc93c536
+
+			measure 'Selected Time Zone Offset' = SELECTEDVALUE('Timezones'[DAX UTC Offset],0)
+				displayFolder: Date and Time Zone Presentation
+				lineageTag: 4fe3f9b5-cc08-477c-ba1f-3aa575cf18f7
+
+				annotation PBI_FormatHint = {"isGeneralNumber":true}
+
+			measure 'Selected Time Zone Text' =
+					
+					VAR _Output = "Time Represented in " & SELECTEDVALUE('Timezones'[Display Name],"UTC") & " - Latest Tests Results: " & [Latest Test Result Date and Time]
+					RETURN _Output
+				displayFolder: Date and Time Zone Presentation
+				lineageTag: 5abb822b-0e4e-4a46-a765-93a69e74dbfa
+
+			measure 'Date of Test Run with Time Zone' = ```
+					
+					VAR _SelectedDate = MAX('Test Results'[Date])
+					VAR _SelectedTime = MAX('Test Results'[Time])
+					VAR _DateTime = 
+					    IF(
+					        ISBLANK(_SelectedDate) || ISBLANK(_SelectedTime),
+					        BLANK(),
+					        _SelectedDate + _SelectedTime
+					    )
+					VAR _TimeAdjustment = _DateTime + DIVIDE([Selected Time Zone Offset], 24, 0)
+					
+					RETURN
+					IF(ISBLANK(_DateTime), BLANK(), _TimeAdjustment)
+					```
+				formatString: General Date
+				displayFolder: Date and Time Zone Presentation
+				lineageTag: 16eab10e-95d0-4f35-8585-053ab2cd51d0
+
+			measure 'Latest Test Result Date and Time' =
+					
+					VAR _MaxDate = MAXX(ALL('Test Results'),'Test Results'[Date])
+					VAR _Time = CALCULATE(
+					    MAX('Test Results'[Time]),
+					    'Test Results'[Date] = _MaxDate
+					)
+					RETURN
+					IF(
+					    ISBLANK(_MaxDate) || ISBLANK(_Time),
+					    BLANK(),
+					    _MaxDate + _Time + DIVIDE([Selected Time Zone Offset], 24, 0)
+					)
+				formatString: General Date
+				displayFolder: Date and Time Zone Presentation
+				lineageTag: 88ba2389-32ba-4306-918a-46873b3ee2f3
+
+			measure 'Test Fail Rate' = ```
+					DIVIDE( [Failed Tests] , [Number of Tests] ) 
+					```
+				formatString: 0.0%;-0.0%;0.0%
+				lineageTag: f32cbd6f-850f-4d0e-9a36-62987d8accf5
+
+			measure 'Test Pass Rate' = IF ( [Number of Tests] = 0, 0, 1 - [Test Fail Rate] )
+				formatString: 0.0%;-0.0%;0.0%
+				lineageTag: 00983086-d91d-4d1f-b9ce-73c380aebde5
+
+			column Column1
+				dataType: string
+				isHidden
+				isAvailableInMdx: false
+				lineageTag: e4fdba23-9696-4d1a-8311-06b44c60769b
+				summarizeBy: none
+				sourceColumn: Column1
+
+				changedProperty = IsHidden
+
+				annotation SummarizationSetBy = Automatic
+
+			partition _Measures = m
+				mode: import
+				source =
+						let
+						    // Creates an empty table with a column named "Column1"
+						    #"Created Empty Table With Column" = #table(
+						        {"Column1"},
+						        {
+						        }
+						    ),
+						    // Sets the data type of "Column1" to text
+						    #"Changed Column1 To Text Type" = Table.TransformColumnTypes(#"Created Empty Table With Column",{{"Column1", type text}})
+						in
+						    #"Changed Column1 To Text Type"
+
+			annotation PBI_ResultType = Table
+
+			annotation PBI_NavigationStepName = Navigation
+
+		relationship 6d34332e-f8a8-7c5b-8844-9c96cfc14503
+			fromColumn: 'Test Results'.TestsId
+			toColumn: Tests.Id
+
+		relationship 40bb1bb6-28bb-8c9a-eaab-ac38a6347b80
+			fromColumn: 'Test Results'.CommitsId
+			toColumn: Commits.Id
+
+		relationship 4edf9840-07ea-7920-01ab-1615eca1a8d5
+			fromColumn: 'Test Results'.SeverityId
+			toColumn: Severity.SeverityId
+
+		relationship ad3e8532-c503-9d11-f8a7-1c2d14b3603f
+			fromColumn: 'Test Results'.Date
+			toColumn: Calendar.Date
+
+		cultureInfo en-US
+
+			linguisticMetadata = {"Version":"2.0.0","Language":"en-US","Entities":{"table_measures.test_fail_rate":{"Definition":{"Binding":{"ConceptualEntity":"_Measures","ConceptualProperty":"Test Fail Rate"}},"State":"Generated","Terms":[{"Error":{"State":"Suggested","Source":{"Type":"External","Agent":"PowerBI.VisualColumnRename"},"Weight":0.9}},{"Informational":{"State":"Suggested","Source":{"Type":"External","Agent":"PowerBI.VisualColumnRename"},"Weight":0.9}},{"Warning":{"State":"Suggested","Source":{"Type":"External","Agent":"PowerBI.VisualColumnRename"},"Weight":0.9}}]},"test_results.status":{"Definition":{"Binding":{"ConceptualEntity":"Test Results","ConceptualProperty":"Status"}},"State":"Generated"},"table_measures.test_pass_rate":{"Definition":{"Binding":{"ConceptualEntity":"_Measures","ConceptualProperty":"Test Pass Rate"}},"State":"Generated","Terms":[{"passed":{"State":"Suggested","Source":{"Type":"External","Agent":"PowerBI.VisualColumnRename"},"Weight":0.9}}]},"table_measures.number_of_tests":{"Definition":{"Binding":{"ConceptualEntity":"_Measures","ConceptualProperty":"Number of Tests"}},"State":"Generated","Terms":[{"Warning":{"State":"Suggested","Source":{"Type":"External","Agent":"PowerBI.VisualColumnRename"},"Weight":0.9}},{"Informational":{"State":"Suggested","Source":{"Type":"External","Agent":"PowerBI.VisualColumnRename"},"Weight":0.9}},{"tests":{"State":"Suggested","Source":{"Type":"External","Agent":"PowerBI.VisualColumnRename"},"Weight":0.9}},{"Error":{"State":"Suggested","Source":{"Type":"External","Agent":"PowerBI.VisualColumnRename"},"Weight":0.9}},{"Number of Tests":{"State":"Suggested","Source":{"Type":"External","Agent":"PowerBI.VisualColumnRename"},"Weight":0.9}}]},"tests.name":{"Definition":{"Binding":{"ConceptualEntity":"Tests","ConceptualProperty":"Name"}},"State":"Generated"},"severity.state":{"Definition":{"Binding":{"ConceptualEntity":"Severity","ConceptualProperty":"State"}},"State":"Generated","Terms":[{"Test Result(s)":{"State":"Suggested","Source":{"Type":"External","Agent":"PowerBI.VisualColumnRename"},"Weight":0.9}}]},"test_results.islatesttestresult":{"Definition":{"Binding":{"ConceptualEntity":"Test Results","ConceptualProperty":"IsLatestTestResult"}},"State":"Generated","Terms":[{"Is Latest":{"State":"Suggested","Source":{"Type":"External","Agent":"PowerBI.VisualColumnRename"},"Weight":0.9}}]}}}
+				contentType: json
+
+		expression Eventhouse_Cluster_URL = "https://trd-9b0c3cq3fpaee9xjvq.z4.kusto.fabric.microsoft.com" meta [IsParameterQuery = true, IsParameterQueryRequired = true, Type = "Text"]
+			lineageTag: fff291bd-43b4-42fb-9fa2-30762bf5d59a
+			queryGroup: Parameters
+
+			annotation PBI_NavigationStepName = Navigation
+
+			annotation PBI_ResultType = Text
+
+		expression Database = "EH_MYPBITMA" meta [IsParameterQuery = true, IsParameterQueryRequired = true, Type = "Text"]
+			lineageTag: 8a3e8b14-56d5-4657-8b77-b00146b6895d
+			queryGroup: Parameters
+
+			annotation PBI_NavigationStepName = Navigation
+
+			annotation PBI_ResultType = Text
+
+		/// Identify the number of days (including today) to look in the past to retrieve the data (e.g., 7 for looking for data in the past 7 days).
+		expression Days_Since_Filter = 30 meta [IsParameterQuery=true, Type="Number", IsParameterQueryRequired=true]
+			lineageTag: 8aeb41ab-1b55-40d2-8adb-8a4ef18956cf
+			queryGroup: Parameters
+
+			annotation PBI_NavigationStepName = Navigation
+
+			annotation PBI_ResultType = Number
+
+		expression Culture = "en-US" meta [IsParameterQuery=true, Type="Text", IsParameterQueryRequired=true]
+			lineageTag: 9801ddab-15d2-48bb-abc3-f877a0853c39
+			queryGroup: Parameters
+
+			annotation PBI_NavigationStepName = Navigation
+
+			annotation PBI_ResultType = Text
+
+		queryGroup Parameters
+
+			annotation PBI_QueryGroupOrder = 0
+
+		/// Data comes from the Eventhouse in Microsoft Fabric
+		queryGroup KQL
+
+			annotation PBI_QueryGroupOrder = 2
+
+		queryGroup Functions
+
+			annotation PBI_QueryGroupOrder = 1
+
+		annotation __PBI_TimeIntelligenceEnabled = 0
+
+		annotation PBI_QueryOrder = ["Commits","Tests","Test Results","Eventhouse_Cluster_URL","Database","Days_Since_Filter","Severity","Timezones","Calendar","_Measures","Culture"]
+
+		annotation PBI_ProTooling = ["DevMode","TMDLView_Desktop"]
+
+		annotation BestPracticeAnalyzer_IgnoreRules = {"RuleIDs":[]}
+
+		annotation BestPracticeAnalyzer_ExternalRuleFiles = ["C:\\Users\\JohnKerski\\OneDrive - Kerski Family\\Documents\\Git\\pbi-teams-more-analytic-support\\Rules\\BPARules.json"]
+
+		annotation __TEdtr = 1
+
+		annotation __PBI_ServiceStoredInTmdl = reserved
+

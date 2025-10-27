@@ -37,7 +37,8 @@ table Severity
 		mode: import
 		source =
 				let
-				    Source = #table(
+				    // Create a table with columns for severity and states
+				    #"Created Severity State Table" = #table(
 				        {"SeverityId", "State","Order"},
 				        {
 				            {1, "Informational",3},
@@ -45,8 +46,9 @@ table Severity
 				            {3, "Error",1}
 				        }
 				    ),
-				    #"Changed Type" = Table.TransformColumnTypes(
-				        Source,
+				    // Define appropriate data types for each column in the table
+				    #"Updated Column Types In Table" = Table.TransformColumnTypes(
+				        #"Created Severity State Table",
 				        {
 				            {"SeverityId", Int64.Type},
 				            {"State", type text},
@@ -54,7 +56,7 @@ table Severity
 				        }
 				    )
 				in
-				    #"Changed Type"
+				    #"Updated Column Types In Table"
 
 	annotation PBI_NavigationStepName = Navigation
 

@@ -128,15 +128,42 @@ table 'Test Results'
 
 		annotation SummarizationSetBy = User
 
+	column RepositoryId
+		dataType: string
+		isHidden
+		sourceProviderType: nvarchar(max)
+		lineageTag: 7d691349-ff78-4319-a6b7-247252c20b2d
+		summarizeBy: none
+		sourceColumn: RepositoryId
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
+	column BranchName
+		dataType: string
+		isHidden
+		sourceProviderType: nvarchar(max)
+		lineageTag: 6b24aadc-d7eb-4d4b-a079-581e5dffe79c
+		summarizeBy: none
+		sourceColumn: BranchName
+
+		changedProperty = IsHidden
+
+		annotation SummarizationSetBy = Automatic
+
 	partition 'Test Results' = m
 		mode: directQuery
 		queryGroup: KQL
 		source =
 				let
-				    Source = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "fnGetTestResults #(lf)| where Date >= ago(" & Number.ToText(Days_Since_Filter) & "d)", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null]),
-				    #"Renamed Columns" = Table.RenameColumns(Source,{{"PassedStatus", "Status"}})
+				    // Connects to Azure Data Explorer and retrieves test results data using the provided URL, database, and query with a filter for recent dates
+				    #"Retrieved Test Results Data" = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "fnGetTestResults() #(lf)| where Date >= ago(" & Number.ToText(Days_Since_Filter,"D",Culture) & "d)", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null]),
+				
+				    // Renames the 'PassedStatus' column to 'Status' for easier understanding or downstream use
+				    #"Renamed PassedStatus To Status" = Table.RenameColumns(#"Retrieved Test Results Data",{{"PassedStatus", "Status"}})
 				in
-				    #"Renamed Columns"
+				    #"Renamed PassedStatus To Status"
 
 	annotation PBI_ResultType = Table
 

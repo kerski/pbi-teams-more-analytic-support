@@ -90,10 +90,12 @@ table Calendar
 		queryGroup: KQL
 		source =
 				let
-				    Source = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "range Date from toscalar(Commits | where Date >= ago(" & Number.ToText(Days_Since_Filter) &  "d) | summarize min(Date)) to now() step 1d#(lf)| extend #(lf)    Day = dayofmonth(Date),#(lf)    Month = getmonth(Date),#(lf)    Year = getyear(Date),#(lf)    MonthName = case(#(lf)        getmonth(Date) == 1, ""January"",#(lf)        getmonth(Date) == 2, ""February"",#(lf)        getmonth(Date) == 3, ""March"",#(lf)        getmonth(Date) == 4, ""April"",#(lf)        getmonth(Date) == 5, ""May"",#(lf)        getmonth(Date) == 6, ""June"",#(lf)        getmonth(Date) == 7, ""July"",#(lf)        getmonth(Date) == 8, ""August"",#(lf)        getmonth(Date) == 9, ""September"",#(lf)        getmonth(Date) == 10, ""October"",#(lf)        getmonth(Date) == 11, ""November"",#(lf)        getmonth(Date) == 12, ""December"",#(lf)        ""Unknown""#(lf)    ),#(lf)    MonthYearYYYYMM = getyear(Date) * 100 + getmonth(Date),#(lf)    CalendarID = toint(format_datetime(Date, 'yyyyMMdd'))#(lf)| project CalendarID, Date, Day, Month, MonthName, MonthYearYYYYMM, Year", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null]),
-				    #"Renamed Columns" = Table.RenameColumns(Source,{{"MonthName", "Month Name"}})
+				    // Connects to Azure Data Explorer and runs a query to generate calendar data within the filtered range
+				    #"Fetched Calendar Data From Query" = AzureDataExplorer.Contents(Eventhouse_Cluster_URL, Database, "range Date from toscalar(Commits | where Date >= ago(" & Number.ToText(Days_Since_Filter,"D",Culture) &  "d) | summarize min(Date)) to now() step 1d#(lf)| extend #(lf)    Day = dayofmonth(Date),#(lf)    Month = getmonth(Date),#(lf)    Year = getyear(Date),#(lf)    MonthName = case(#(lf)        getmonth(Date) == 1, ""January"",#(lf)        getmonth(Date) == 2, ""February"",#(lf)        getmonth(Date) == 3, ""March"",#(lf)        getmonth(Date) == 4, ""April"",#(lf)        getmonth(Date) == 5, ""May"",#(lf)        getmonth(Date) == 6, ""June"",#(lf)        getmonth(Date) == 7, ""July"",#(lf)        getmonth(Date) == 8, ""August"",#(lf)        getmonth(Date) == 9, ""September"",#(lf)        getmonth(Date) == 10, ""October"",#(lf)        getmonth(Date) == 11, ""November"",#(lf)        getmonth(Date) == 12, ""December"",#(lf)        ""Unknown""#(lf)    ),#(lf)    MonthYearYYYYMM = getyear(Date) * 100 + getmonth(Date),#(lf)    CalendarID = toint(format_datetime(Date, 'yyyyMMdd'))#(lf)| project CalendarID, Date, Day, Month, MonthName, MonthYearYYYYMM, Year", [MaxRows=null, MaxSize=null, NoTruncate=null, AdditionalSetStatements=null]),
+				    // Renames the MonthName column to Month Name for better clarity and consistency
+				    #"Renamed Month Name Column" = Table.RenameColumns(#"Fetched Calendar Data From Query",{{"MonthName", "Month Name"}})
 				in
-				    #"Renamed Columns"
+				    #"Renamed Month Name Column"
 
 	annotation PBI_NavigationStepName = Navigation
 

@@ -56,11 +56,11 @@ table Timezones
 		mode: import
 		source = ```
 				let
-				    // Define the column names  
-				    ColumnNames = {"Timezone ID", "Name", "Timezone Selection", "UTC Offset"},  
+				    // Specify the required column names for the timezone table
+				    #"Defined Column Names" = {"Timezone ID", "Name", "Timezone Selection", "UTC Offset"},  
 				  
-				    // Define the rows of data  
-				    Rows = {  
+				    // Specify each row containing timezone data
+				    #"Listed Rows" = {  
 				        {0,"Dateline Standard Time","(UTC-12:00) International Date Line West","-12:00"},
 				        {1,"UTC-11","(UTC-11:00) Coordinated Universal Time -11","-11:00"},
 				        {2,"Hawaiian Standard Time","(UTC-10:00) Hawaii","-10:00"},
@@ -162,43 +162,73 @@ table Timezones
 				        {98,"Samoa Standard Time","(UTC-11:00) Samoa","-11:00"}
 				    },  
 				  
-				    // Create the table using #table  
-				    TimeZoneTable = #table(ColumnNames, Rows) , 
-				    #"Changed Type" = Table.TransformColumnTypes(TimeZoneTable,{{"Timezone ID", Int64.Type}, {"Name", type text}, {"UTC Offset", type text}}),
-				    #"Cleaned Text" = Table.TransformColumns(#"Changed Type",{{"Name", Text.Clean, type text}}),
-				    // Added Fixed UTC Now
-				    #"Calculate UTC Now" = Table.AddColumn(#"Cleaned Text", "Fixed UTC Now", each Date.AddDays(DateTimeZone.FixedUtcNow(),0)),
-				    #"Convert to DTZ" = Table.TransformColumnTypes(#"Calculate UTC Now",{{"Fixed UTC Now", type datetimezone}}),
-				    #"Convert to Date" = Table.TransformColumnTypes(#"Convert to DTZ",{{"Fixed UTC Now", type date}}),
-				    // Added Start of US Daylight Savings
-				    #"Calculate Start of US Daylight Savings" = Table.AddColumn(#"Convert to Date", "Start of US Daylight Savings", each Date.StartOfWeek(#date(Date.Year([Fixed UTC Now]), 3, 14), Day.Sunday)),
-				    // Added End of Use Daylight Savings
-				    #"Calculate End of US Daylight Savings" = Table.AddColumn(#"Calculate Start of US Daylight Savings", "End of US Daylight Savings", each Date.StartOfWeek(#date(Date.Year([Fixed UTC Now]), 11, 7), Day.Sunday)),
-				    #"Change Start and End to Date Type" = Table.TransformColumnTypes(#"Calculate End of US Daylight Savings",{{"Start of US Daylight Savings", type date}, {"End of US Daylight Savings", type date}}),
-				    // Calculate if the date falls within US Daylight Savings
-				    #"Calculate if US Daylight Savings" = Table.AddColumn(#"Change Start and End to Date Type", "Is Daylight Savings Time in United States", each if [Fixed UTC Now] >= [Start of US Daylight Savings] and [Fixed UTC Now] <= [End of US Daylight Savings] then true else false),
-				    #"Convert to Boolean" = Table.TransformColumnTypes(#"Calculate if US Daylight Savings",{{"Is Daylight Savings Time in United States", type logical}}),
-				    #"Split Column by Colon" = Table.SplitColumn(#"Convert to Boolean", "UTC Offset", Splitter.SplitTextByEachDelimiter({":"}, QuoteStyle.Csv, false), {"UTC Offset - Hours", "UTC Offset - Minutes"}),
-				    #"Convert Numbers to Int" = Table.TransformColumnTypes(#"Split Column by Colon",{{"UTC Offset - Hours", Int64.Type}, {"UTC Offset - Minutes", Int64.Type}}),
-				    // Added Adjust Hours
-				    #"Calculate Adjust Hours" = Table.AddColumn(#"Convert Numbers to Int", "Adjust Hours", each if [Timezone ID] = 2 or [Timezone ID] = 3 or [Timezone ID] = 4 or [Timezone ID] = 6 or [Timezone ID] = 11 or [Timezone ID] = 13 or [Timezone ID] = 15 then if [Is Daylight Savings Time in United States] then [#"UTC Offset - Hours"] + 1 else [#"UTC Offset - Hours"] else [#"UTC Offset - Hours"]),
-				    // Added Adjust Name for hours
-				    #"Calculate Adjust Name" = Table.AddColumn(#"Calculate Adjust Hours", "Adjust Name", each if [Timezone ID] = 2 or [Timezone ID] = 3 or [Timezone ID] = 4 or [Timezone ID] = 6 or [Timezone ID] = 11 or [Timezone ID] = 13 or [Timezone ID] = 15 then if [Is Daylight Savings Time in United States] then Text.Replace([Name],"Standard","Daylight") else [Name] else [Name]),
-				    #"Rename Adjust Name to Name" = Table.RenameColumns(#"Calculate Adjust Name",{{"Adjust Name", "Display Name"}}),
-				    // Added UTC Offest - Right
-				    #"Calculate UTC Offset - Right" = Table.AddColumn(#"Rename Adjust Name to Name", "UTC Offset - Right", each if [#"UTC Offset - Minutes"] = 0 or [#"UTC Offset - Minutes"] = null then "00" else Number.ToText([#"UTC Offset - Minutes"])),
-				    // Added UTC Offset
-				    #"Calculate Adjust UTC Offset" = Table.AddColumn(#"Calculate UTC Offset - Right", "UTC Offset", each Number.ToText([Adjust Hours]) & ":" & [#"UTC Offset - Right"]),
-				    #"Convert 30 minutes to 5" = Table.ReplaceValue(#"Calculate Adjust UTC Offset",30,5,Replacer.ReplaceValue,{"UTC Offset - Minutes"}),
-				    #"Convert null to 0" = Table.ReplaceValue(#"Convert 30 minutes to 5",null,0,Replacer.ReplaceValue,{"UTC Offset - Minutes"}),
-				    #"Merged Columns" = Table.CombineColumns(Table.TransformColumnTypes(#"Convert null to 0", {{"Adjust Hours", type text}, {"UTC Offset - Minutes", type text}}, "en-US"),{"Adjust Hours", "UTC Offset - Minutes"},Combiner.CombineTextByDelimiter(".", QuoteStyle.None),"Merged"),
-				    #"Change to Decimal" = Table.TransformColumnTypes(#"Merged Columns",{{"Merged", type number}}),
-				    #"Rename Merged to DAX UTC Offset" = Table.RenameColumns(#"Change to Decimal",{{"Merged", "DAX UTC Offset"}}),
-				    #"Reordered Columns" = Table.ReorderColumns(#"Rename Merged to DAX UTC Offset",{"Timezone ID", "Name", "Display Name", "Timezone Selection", "UTC Offset", "DAX UTC Offset", "Fixed UTC Now", "Is Daylight Savings Time in United States", "UTC Offset - Hours", "UTC Offset - Right"}),
-				    #"Removed Intermediate Columns" = Table.RemoveColumns(#"Reordered Columns",{"Fixed UTC Now", "Is Daylight Savings Time in United States", "UTC Offset - Hours", "UTC Offset - Right", "Start of US Daylight Savings", "End of US Daylight Savings"}),
-				    #"Changed Type1" = Table.TransformColumnTypes(#"Removed Intermediate Columns",{{"Timezone Selection", type text}, {"Display Name", type text}})
+				    // Construct the table with the defined columns and rows
+				    #"Created TimeZone Table" = #table(#"Defined Column Names", #"Listed Rows") , 
+				
+				    // Change the data types of select columns for accuracy
+				    #"Transformed Column Types" = Table.TransformColumnTypes(#"Created TimeZone Table",{{"Timezone ID", Int64.Type}, {"Name", type text}, {"UTC Offset", type text}}),
+				
+				    // Remove unwanted characters from the Name column
+				    #"Cleaned Name Text" = Table.TransformColumns(#"Transformed Column Types",{{"Name", Text.Clean, type text}}),
+				
+				    // Add a column for today's fixed UTC date
+				    #"Inserted Fixed UTC Now" = Table.AddColumn(#"Cleaned Name Text", "Fixed UTC Now", each Date.AddDays(DateTimeZone.FixedUtcNow(),0), type datetimezone),
+				
+				    // Convert the Fixed UTC Now column to date data type
+				    #"Converted Fixed UTC Now to Date" = Table.TransformColumnTypes(#"Inserted Fixed UTC Now",{{"Fixed UTC Now", type date}}),
+				
+				    // Create a column showing the start of US daylight savings for given year
+				    #"Calculated Start of US Daylight Savings" = Table.AddColumn(#"Converted Fixed UTC Now to Date", "Start of US Daylight Savings", each Date.StartOfWeek(#date(Date.Year([Fixed UTC Now]), 3, 14), Day.Sunday), type date),
+				
+				    // Create a column showing the end date of US daylight savings for the year
+				    #"Calculated End of US Daylight Savings" = Table.AddColumn(#"Calculated Start of US Daylight Savings", "End of US Daylight Savings", each Date.StartOfWeek(#date(Date.Year([Fixed UTC Now]), 11, 7), Day.Sunday), type date),
+				
+				    // Indicate whether the date falls inside US daylight savings period
+				    #"Determined US Daylight Savings Applicability" = Table.AddColumn(#"Calculated End of US Daylight Savings", "Is Daylight Savings Time in United States", each if [Fixed UTC Now] >= [Start of US Daylight Savings] and [Fixed UTC Now] <= [End of US Daylight Savings] then true else false, type logical),
+				
+				    // Split the UTC Offset into hours and minutes for further calculations
+				    #"Split UTC Offset into Hours Minutes" = Table.SplitColumn(#"Determined US Daylight Savings Applicability", "UTC Offset", Splitter.SplitTextByEachDelimiter({":"}, QuoteStyle.Csv, false), {"UTC Offset - Hours", "UTC Offset - Minutes"}, null),
+				
+				    // Convert both offset values to integers for calculations
+				    #"Converted Offset Strings to Integers" = Table.TransformColumnTypes(#"Split UTC Offset into Hours Minutes",{{"UTC Offset - Hours", Int64.Type}, {"UTC Offset - Minutes", Int64.Type}}),
+				
+				    // Add a column that conditionally adjusts the timezone hour according to daylight savings 
+				    #"Calculated Adjusted UTC Offset Hours" = Table.AddColumn(#"Converted Offset Strings to Integers", "Adjust Hours", each if [Timezone ID] = 2 or [Timezone ID] = 3 or [Timezone ID] = 4 or [Timezone ID] = 6 or [Timezone ID] = 11 or [Timezone ID] = 13 or [Timezone ID] = 15 then if [Is Daylight Savings Time in United States] then [#"UTC Offset - Hours"] + 1 else [#"UTC Offset - Hours"] else [#"UTC Offset - Hours"], Int32.Type),
+				
+				    // Add a new column for adjusted timezone display name based on daylight savings 
+				    #"Set Adjusted Display Name" = Table.AddColumn(#"Calculated Adjusted UTC Offset Hours", "Adjust Name", each if [Timezone ID] = 2 or [Timezone ID] = 3 or [Timezone ID] = 4 or [Timezone ID] = 6 or [Timezone ID] = 11 or [Timezone ID] = 13 or [Timezone ID] = 15 then if [Is Daylight Savings Time in United States] then Text.Replace([Name],"Standard","Daylight") else [Name] else [Name], type text),
+				
+				    // Rename the Adjust Name column to Display Name for presentation
+				    #"Renamed Display Name Column" = Table.RenameColumns(#"Set Adjusted Display Name",{{"Adjust Name", "Display Name"}}),
+				
+				    // Add a text column to represent offset minutes, defaulting to "00" where needed
+				    #"Formatted UTC Offset Minutes" = Table.AddColumn(#"Renamed Display Name Column", "UTC Offset - Right", each if [#"UTC Offset - Minutes"] = 0 or [#"UTC Offset - Minutes"] = null then "00" else Number.ToText([#"UTC Offset - Minutes"],"G",Culture), type text),
+				
+				    // Concatenate the hour and minutes to form a complete UTC offset string
+				    #"Generated Adjusted UTC Offset Text" = Table.AddColumn(#"Formatted UTC Offset Minutes", "UTC Offset", each Number.ToText([Adjust Hours],"G",Culture) & ":" & [#"UTC Offset - Right"],type text),
+				
+				    // Replace all instances of 30 minutes with 5 in the UTC minutes column
+				    #"Changed UTC Offset Minutes 30 to 5" = Table.ReplaceValue(#"Generated Adjusted UTC Offset Text",30,5,Replacer.ReplaceValue,{"UTC Offset - Minutes"}),
+				
+				    // Replace null with zero in the UTC minutes column
+				    #"Changed Null Offset Minutes to Zero" = Table.ReplaceValue(#"Changed UTC Offset Minutes 30 to 5",null,0,Replacer.ReplaceValue,{"UTC Offset - Minutes"}),
+				
+				    // Combine hours and minutes into a single string column to be used as DAX UTC offset
+				    #"Merged Adjusted Hours and Minutes Column" = Table.CombineColumns(Table.TransformColumnTypes(#"Changed Null Offset Minutes to Zero", {{"Adjust Hours", type text}, {"UTC Offset - Minutes", type text}}, "en-US"),{"Adjust Hours", "UTC Offset - Minutes"},Combiner.CombineTextByDelimiter(".", QuoteStyle.None),"Merged"),
+				
+				    // Change the types of columns for display and calculation accuracy
+				    #"Changed Types for Final Table Columns" = Table.TransformColumnTypes(#"Merged Adjusted Hours and Minutes Column",{{"Timezone Selection", type text}, {"Display Name", type text},{"Merged", type number}}),
+				
+				    // Rename the Merged column to DAX UTC Offset for DAX compatibility
+				    #"Renamed Merged to DAX UTC Offset" = Table.RenameColumns(#"Changed Types for Final Table Columns",{{"Merged", "DAX UTC Offset"}}),
+				
+				    // Arrange the order of columns for clarity and usability
+				    #"Reordered Final Output Columns" = Table.ReorderColumns(#"Renamed Merged to DAX UTC Offset",{"Timezone ID", "Name", "Display Name", "Timezone Selection", "UTC Offset", "DAX UTC Offset", "Fixed UTC Now", "Is Daylight Savings Time in United States", "UTC Offset - Hours", "UTC Offset - Right"},MissingField.Ignore),
+				
+				    // Remove intermediate calculation columns before final output
+				    #"Removed Calculation Columns" = Table.RemoveColumns(#"Reordered Final Output Columns",{"Fixed UTC Now", "Is Daylight Savings Time in United States", "UTC Offset - Hours", "UTC Offset - Right", "Start of US Daylight Savings", "End of US Daylight Savings"},MissingField.Ignore)
 				in
-				    #"Changed Type1"
+				    #"Removed Calculation Columns"
 				```
 
 	annotation PBI_NavigationStepName = Navigation

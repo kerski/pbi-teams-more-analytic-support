@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.3.0/schema.json",
   "name": "fbd87c4750e827296c20",
   "position": {
     "x": 1.6626558739881148,
@@ -741,6 +741,34 @@
           ]
         },
         "howCreated": "User"
+      },
+      {
+        "name": "f58bf26b0a4ba0c36d78",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Test Pass Rate"
+          }
+        },
+        "type": "Advanced"
+      },
+      {
+        "name": "28e38b36e4531c9b2bf2",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Number of Tests"
+          }
+        },
+        "type": "Advanced"
       }
     ]
   }

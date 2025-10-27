@@ -84,10 +84,18 @@ table _Measures
 		mode: import
 		source =
 				let
-				    Source = Table.FromRows(Json.Document(Binary.Decompress(Binary.FromText("i44FAA==", BinaryEncoding.Base64), Compression.Deflate)), let _t = ((type nullable text) meta [Serialized.Text = true]) in type table [Column1 = _t]),
-				    #"Changed Type" = Table.TransformColumnTypes(Source,{{"Column1", type text}})
+				    // Creates an empty table with a column named "Column1"
+				    #"Created Empty Table With Column" = #table(
+				        {"Column1"},
+				        {
+				        }
+				    ),
+				    // Sets the data type of "Column1" to text
+				    #"Changed Column1 To Text Type" = Table.TransformColumnTypes(#"Created Empty Table With Column",{{"Column1", type text}})
 				in
-				    #"Changed Type"
+				    #"Changed Column1 To Text Type"
 
 	annotation PBI_ResultType = Table
+
+	annotation PBI_NavigationStepName = Navigation
 
