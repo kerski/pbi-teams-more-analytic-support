@@ -4,10 +4,10 @@
   "position": {
     "x": 28.6021505376344,
     "y": 215.22580645161287,
-    "z": 7000,
+    "z": 11000,
     "height": 70.967741935483872,
     "width": 200,
-    "tabOrder": 5000
+    "tabOrder": 6000
   },
   "visual": {
     "visualType": "slicer",
@@ -61,7 +61,7 @@
             "textSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },
@@ -86,7 +86,7 @@
             "textSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },

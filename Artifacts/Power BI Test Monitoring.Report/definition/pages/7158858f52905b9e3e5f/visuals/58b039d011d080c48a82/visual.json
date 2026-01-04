@@ -4,10 +4,10 @@
   "position": {
     "x": 12.255672637161876,
     "y": 280.27067029869784,
-    "z": 9000,
+    "z": 10000,
     "height": 65.784691933426757,
     "width": 353.43148215213591,
-    "tabOrder": 29843
+    "tabOrder": 19000
   },
   "visual": {
     "visualType": "hundredPercentStackedBarChart",
@@ -73,7 +73,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },
@@ -154,7 +154,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },

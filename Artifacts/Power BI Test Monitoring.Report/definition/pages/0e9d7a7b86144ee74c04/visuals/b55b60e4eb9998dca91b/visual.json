@@ -6,8 +6,7 @@
     "y": 68.5721243113262,
     "z": 4000,
     "height": 632.1103095607707,
-    "width": 816.63166225306668,
-    "tabOrder": 1000
+    "width": 816.63166225306668
   },
   "visual": {
     "visualType": "pivotTable",
@@ -160,7 +159,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },
@@ -309,7 +308,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             }

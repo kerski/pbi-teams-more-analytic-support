@@ -4,7 +4,7 @@
   "position": {
     "x": 28.6021505376344,
     "y": 142.45161290322579,
-    "z": 4000,
+    "z": 6000,
     "height": 72.258064516129025,
     "width": 200,
     "tabOrder": 3000
@@ -135,7 +135,7 @@
             "textSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },
@@ -160,7 +160,7 @@
             "textSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },
@@ -303,20 +303,6 @@
             }
           ]
         }
-      },
-      {
-        "name": "7eb31083ccee86967d82",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Artifact Name"
-          }
-        },
-        "type": "Categorical"
       }
     ]
   }

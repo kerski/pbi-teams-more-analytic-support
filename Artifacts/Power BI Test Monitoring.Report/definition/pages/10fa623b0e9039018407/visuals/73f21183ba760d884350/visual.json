@@ -7,7 +7,7 @@
     "z": 0,
     "height": 628.38709677419354,
     "width": 984.516129032258,
-    "tabOrder": 3000
+    "tabOrder": 2000
   },
   "visual": {
     "visualType": "tableEx",
@@ -197,7 +197,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },
@@ -456,163 +456,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "b89b871d55c45c731183",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Test Results"
-              }
-            },
-            "Property": "Id"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "fbdc2a823d3907022bc7",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Test Results"
-              }
-            },
-            "Property": "Status"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "fba88861e9cb9296da86",
-        "field": {
-          "Measure": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "_Measures"
-              }
-            },
-            "Property": "Date of Test Run with Time Zone"
-          }
-        },
-        "type": "Advanced"
-      },
-      {
-        "name": "c13ddc01548c6712e8bd",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Committed By"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "1566063237570a6a012c",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Artifact Name"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "65d2e1102319cc1c0460",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Branch Name"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "4da373b0d6de201477e0",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Type"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "cbf9304fc6083544c01c",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Tests"
-              }
-            },
-            "Property": "Source"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "5be8ea137a43c6c42509",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Tests"
-              }
-            },
-            "Property": "Name"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "4cf905ab278dc86a7c9d",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Test Results"
-              }
-            },
-            "Property": "Actual"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "440df63648e0de44762d",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Test Results"
-              }
-            },
-            "Property": "Expected"
-          }
-        },
-        "type": "Categorical"
-      }
-    ]
   }
 }

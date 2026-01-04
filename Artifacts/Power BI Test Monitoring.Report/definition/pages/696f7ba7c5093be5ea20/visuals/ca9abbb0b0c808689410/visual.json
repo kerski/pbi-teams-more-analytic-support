@@ -7,7 +7,7 @@
     "z": 23000,
     "height": 84.829286078903237,
     "width": 350.07015241012181,
-    "tabOrder": 7000
+    "tabOrder": 6000
   },
   "visual": {
     "visualType": "hundredPercentStackedAreaChart",
@@ -109,7 +109,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },
@@ -204,7 +204,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },

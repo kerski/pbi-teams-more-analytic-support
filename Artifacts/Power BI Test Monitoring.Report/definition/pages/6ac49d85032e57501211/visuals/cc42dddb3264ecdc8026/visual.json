@@ -7,7 +7,7 @@
     "z": 0,
     "height": 628.38709677419354,
     "width": 984.516129032258,
-    "tabOrder": 2000
+    "tabOrder": 1000
   },
   "visual": {
     "visualType": "tableEx",
@@ -159,7 +159,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },
@@ -561,62 +561,6 @@
         },
         "type": "Categorical",
         "howCreated": "User"
-      },
-      {
-        "name": "6229d3ddd91527b6e61d",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Type"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "0b640c5e6a6a69b02003",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Tests"
-              }
-            },
-            "Property": "Name"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "ffdde14e0ab3548a2702",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Branch Name"
-          }
-        },
-        "type": "Categorical"
-      },
-      {
-        "name": "ac945805abd350b81908",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Severity"
-              }
-            },
-            "Property": "State"
-          }
-        },
-        "type": "Categorical"
       }
     ],
     "filterSortOrder": "Custom"

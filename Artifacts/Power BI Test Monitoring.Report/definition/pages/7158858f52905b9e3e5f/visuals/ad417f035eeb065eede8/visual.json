@@ -4,10 +4,10 @@
   "position": {
     "x": 469.89909909909909,
     "y": 188.75555555555556,
-    "z": 14000,
+    "z": 15000,
     "height": 86.666666666666671,
     "width": 348.88888888888886,
-    "tabOrder": 5000
+    "tabOrder": 3000
   },
   "visual": {
     "visualType": "barChart",
@@ -110,7 +110,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },
@@ -184,7 +184,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },

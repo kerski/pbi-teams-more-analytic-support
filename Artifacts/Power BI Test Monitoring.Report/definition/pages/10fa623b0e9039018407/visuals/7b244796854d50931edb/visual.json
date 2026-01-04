@@ -4,9 +4,10 @@
   "position": {
     "x": 0,
     "y": 47.425704361250482,
-    "z": 6000,
+    "z": 9000,
     "height": 653.89986316269608,
-    "width": 199.76281533981265
+    "width": 199.76281533981265,
+    "tabOrder": 10000
   },
   "visualGroup": {
     "displayName": "Slicer Panel",

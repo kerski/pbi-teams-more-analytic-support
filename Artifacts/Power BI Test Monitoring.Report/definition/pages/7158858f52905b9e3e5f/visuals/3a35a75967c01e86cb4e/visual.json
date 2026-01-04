@@ -4,10 +4,10 @@
   "position": {
     "x": 470.0972972972973,
     "y": 415.00180180180178,
-    "z": 17000,
+    "z": 18000,
     "height": 291.89189189189187,
     "width": 348.97297297297297,
-    "tabOrder": 22500
+    "tabOrder": 11000
   },
   "visual": {
     "visualType": "cardVisual",
@@ -99,7 +99,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },
@@ -148,7 +148,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },

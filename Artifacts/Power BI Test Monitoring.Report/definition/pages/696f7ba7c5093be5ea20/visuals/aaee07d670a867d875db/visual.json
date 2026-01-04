@@ -6,7 +6,8 @@
     "y": 7.5,
     "z": 3000,
     "height": 31.25,
-    "width": 437.5
+    "width": 437.5,
+    "tabOrder": 8000
   },
   "visual": {
     "visualType": "card",
@@ -89,7 +90,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },

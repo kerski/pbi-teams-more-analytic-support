@@ -7,7 +7,7 @@
     "z": 24000,
     "height": 85,
     "width": 350,
-    "tabOrder": 8000
+    "tabOrder": 7000
   },
   "visual": {
     "visualType": "hundredPercentStackedAreaChart",
@@ -122,7 +122,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             }
@@ -203,7 +203,7 @@
             "fontSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             }

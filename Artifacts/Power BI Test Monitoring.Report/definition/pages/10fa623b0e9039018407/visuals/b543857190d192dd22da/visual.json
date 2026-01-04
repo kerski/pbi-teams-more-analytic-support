@@ -4,10 +4,10 @@
   "position": {
     "x": 28.6021505376344,
     "y": 67.096774193548384,
-    "z": 5000,
+    "z": 8000,
     "height": 74.838709677419359,
     "width": 200,
-    "tabOrder": 6000
+    "tabOrder": 8000
   },
   "visual": {
     "visualType": "slicer",
@@ -61,7 +61,7 @@
             "textSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             },
@@ -98,7 +98,7 @@
             "textSize": {
               "expr": {
                 "Literal": {
-                  "Value": "8D"
+                  "Value": "12D"
                 }
               }
             }
@@ -127,23 +127,5 @@
       ]
     },
     "drillFilterOtherVisuals": true
-  },
-  "filterConfig": {
-    "filters": [
-      {
-        "name": "29ffb3570064bb500092",
-        "field": {
-          "Column": {
-            "Expression": {
-              "SourceRef": {
-                "Entity": "Commits"
-              }
-            },
-            "Property": "Branch Name"
-          }
-        },
-        "type": "Categorical"
-      }
-    ]
   }
 }
