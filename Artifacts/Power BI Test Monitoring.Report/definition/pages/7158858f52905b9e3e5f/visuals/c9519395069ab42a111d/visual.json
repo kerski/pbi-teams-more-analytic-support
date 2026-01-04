@@ -7,7 +7,7 @@
     "z": 13000,
     "height": 86.666666666666671,
     "width": 348.88888888888886,
-    "tabOrder": 5000
+    "tabOrder": 4000
   },
   "visual": {
     "visualType": "barChart",
@@ -536,7 +536,8 @@
           }
         },
         "type": "Advanced",
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "79d1b5506d516c5436b1",
@@ -590,7 +591,58 @@
             }
           ]
         },
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
+      },
+      {
+        "name": "ca2160f05758e099230b",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Test Results"
+              }
+            },
+            "Property": "Status"
+          }
+        },
+        "type": "Categorical",
+        "isHiddenInViewMode": true
+      },
+      {
+        "name": "afe6a426648790151e39",
+        "field": {
+          "Arithmetic": {
+            "Left": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Measures"
+                  }
+                },
+                "Property": "Number of Tests"
+              }
+            },
+            "Right": {
+              "ScopedEval": {
+                "Expression": {
+                  "Measure": {
+                    "Expression": {
+                      "SourceRef": {
+                        "Entity": "_Measures"
+                      }
+                    },
+                    "Property": "Number of Tests"
+                  }
+                },
+                "Scope": []
+              }
+            },
+            "Operator": 3
+          }
+        },
+        "type": "Advanced",
+        "isHiddenInViewMode": true
       }
     ]
   }

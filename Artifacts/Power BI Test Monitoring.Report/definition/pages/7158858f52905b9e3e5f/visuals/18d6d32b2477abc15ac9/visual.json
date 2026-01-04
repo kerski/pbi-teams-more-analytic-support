@@ -7,7 +7,7 @@
     "z": 26000,
     "height": 51.428571428571431,
     "width": 116.1576354679803,
-    "tabOrder": 20000
+    "tabOrder": 19000
   },
   "visual": {
     "visualType": "cardVisual",
@@ -597,7 +597,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Warning'"
+                  "Value": "'Prod - Informationa;'"
                 }
               }
             },
@@ -755,7 +755,8 @@
             }
           ]
         },
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "6d7231e441d410fe5a10",
@@ -810,7 +811,8 @@
             }
           ]
         },
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "3f8e132f424603c67584",
@@ -826,7 +828,23 @@
           }
         },
         "type": "Advanced",
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
+      },
+      {
+        "name": "ba82cc71726c230030e9",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Number of Tests"
+          }
+        },
+        "type": "Advanced",
+        "isHiddenInViewMode": true
       }
     ],
     "filterSortOrder": "Custom"

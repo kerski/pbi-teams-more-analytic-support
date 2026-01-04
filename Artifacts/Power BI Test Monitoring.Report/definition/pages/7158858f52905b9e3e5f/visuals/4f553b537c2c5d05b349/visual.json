@@ -7,7 +7,7 @@
     "z": 27000,
     "height": 50.541871921182263,
     "width": 77.142857142857139,
-    "tabOrder": 27000
+    "tabOrder": 26000
   },
   "visual": {
     "visualType": "cardVisual",
@@ -441,7 +441,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Warning'"
+                  "Value": "'Test - Errors'"
                 }
               }
             },
@@ -599,7 +599,8 @@
             }
           ]
         },
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "6d7231e441d410fe5a10",
@@ -654,7 +655,8 @@
             }
           ]
         },
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "a06d47360a6c90ddb9b7",
@@ -669,7 +671,8 @@
             "Property": "Number of Tests"
           }
         },
-        "type": "Advanced"
+        "type": "Advanced",
+        "isHiddenInViewMode": true
       }
     ],
     "filterSortOrder": "Custom"

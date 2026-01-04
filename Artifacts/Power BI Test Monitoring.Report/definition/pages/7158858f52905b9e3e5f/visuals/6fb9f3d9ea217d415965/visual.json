@@ -6,7 +6,8 @@
     "y": 7.5,
     "z": 3000,
     "height": 31.25,
-    "width": 437.5
+    "width": 437.5,
+    "tabOrder": 31000
   },
   "visual": {
     "visualType": "card",
@@ -171,5 +172,24 @@
       ]
     },
     "drillFilterOtherVisuals": true
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "ca05e12bc3d51b6d04e8",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Selected Time Zone Text"
+          }
+        },
+        "type": "Advanced",
+        "isHiddenInViewMode": true
+      }
+    ]
   }
 }

@@ -7,7 +7,7 @@
     "z": 18000,
     "height": 33.729729729729726,
     "width": 49.2972972972973,
-    "tabOrder": 10000
+    "tabOrder": -9994000
   },
   "visual": {
     "visualType": "image",
@@ -21,6 +21,21 @@
                   "PackageName": "RegisteredResources",
                   "PackageType": 1,
                   "ItemName": "report_48_item5977784569612523.png"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Dev - Report Image'"
                 }
               }
             }

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.3.0/schema.json",
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.2.0/schema.json",
   "name": "ea43ada57c545ab0ccae",
   "position": {
     "x": 469.89909909909909,
@@ -7,7 +7,7 @@
     "z": 11000,
     "height": 60,
     "width": 348.88888888888886,
-    "tabOrder": 24000
+    "tabOrder": 26062
   },
   "visual": {
     "visualType": "hundredPercentStackedBarChart",
@@ -353,6 +353,13 @@
                   "Value": "false"
                 }
               }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Test - Number of Tests by State'"
+                }
+              }
             }
           }
         }
@@ -447,7 +454,8 @@
             }
           ]
         },
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "7c43774b50e420d7e572",
@@ -462,7 +470,8 @@
           }
         },
         "type": "Advanced",
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "e64f637300f7519ee7d5",
@@ -476,7 +485,8 @@
             "Property": "State"
           }
         },
-        "type": "Categorical"
+        "type": "Categorical",
+        "isHiddenInViewMode": true
       },
       {
         "name": "b98c4cdf477c760156f7",
@@ -510,7 +520,8 @@
             "Operator": 3
           }
         },
-        "type": "Advanced"
+        "type": "Advanced",
+        "isHiddenInViewMode": true
       }
     ]
   }

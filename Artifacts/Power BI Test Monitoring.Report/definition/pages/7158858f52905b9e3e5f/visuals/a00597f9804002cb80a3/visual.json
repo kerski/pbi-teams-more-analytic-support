@@ -7,7 +7,7 @@
     "z": 15000,
     "height": 291.89189189189187,
     "width": 348.97297297297297,
-    "tabOrder": 7000
+    "tabOrder": 27125
   },
   "visual": {
     "visualType": "cardVisual",
@@ -939,7 +939,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Test Result Type'"
+                  "Value": "'Dev - Test Result Type'"
                 }
               }
             },
@@ -1050,7 +1050,8 @@
             }
           ]
         },
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "85ca1324eef1340136d0",
@@ -1109,6 +1110,7 @@
             }
           ]
         },
+        "isHiddenInViewMode": true,
         "objects": {
           "general": [
             {
@@ -1139,7 +1141,8 @@
           }
         },
         "type": "TopN",
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "1fcf07d0c22020da9549",
@@ -1154,7 +1157,8 @@
             "Property": "Test Pass Rate"
           }
         },
-        "type": "Advanced"
+        "type": "Advanced",
+        "isHiddenInViewMode": true
       },
       {
         "name": "047f3e87850c8a9046bc",
@@ -1169,7 +1173,8 @@
             "Property": "Number of Tests"
           }
         },
-        "type": "Advanced"
+        "type": "Advanced",
+        "isHiddenInViewMode": true
       }
     ],
     "filterSortOrder": "Custom"

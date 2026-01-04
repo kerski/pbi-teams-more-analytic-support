@@ -7,7 +7,7 @@
     "z": 8000,
     "height": 65.333333333333329,
     "width": 348.66666666666669,
-    "tabOrder": 18000
+    "tabOrder": 26125
   },
   "visual": {
     "visualType": "cardVisual",
@@ -614,7 +614,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Latest test results'"
+                  "Value": "'Test - Latest Test Results'"
                 }
               }
             },
@@ -685,7 +685,8 @@
           }
         },
         "type": "TopN",
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "1d0a85c74ebe757770e0",
@@ -739,7 +740,38 @@
             }
           ]
         },
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
+      },
+      {
+        "name": "2d7f5cf726261519aec4",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Test Pass Rate"
+          }
+        },
+        "type": "Advanced",
+        "isHiddenInViewMode": true
+      },
+      {
+        "name": "73332770848e7a40e895",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Number of Tests"
+          }
+        },
+        "type": "Advanced",
+        "isHiddenInViewMode": true
       }
     ]
   }

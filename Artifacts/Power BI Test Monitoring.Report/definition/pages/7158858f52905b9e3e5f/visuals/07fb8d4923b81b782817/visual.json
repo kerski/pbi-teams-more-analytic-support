@@ -7,7 +7,7 @@
     "z": 4000,
     "height": 40,
     "width": 48.888888888888886,
-    "tabOrder": 31000
+    "tabOrder": 30750
   },
   "visual": {
     "visualType": "actionButton",
@@ -44,6 +44,21 @@
           },
           "selector": {
             "id": "default"
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Informational'"
+                }
+              }
+            }
           }
         }
       ]

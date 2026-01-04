@@ -7,7 +7,7 @@
     "z": 9000,
     "height": 65.784691933426757,
     "width": 353.43148215213591,
-    "tabOrder": 22000
+    "tabOrder": 29843
   },
   "visual": {
     "visualType": "hundredPercentStackedBarChart",
@@ -334,6 +334,13 @@
                   "Value": "false"
                 }
               }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Dev - Number of Tests by State'"
+                }
+              }
             }
           }
         }
@@ -428,7 +435,8 @@
             }
           ]
         },
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "85fa0e80e701c0500911",
@@ -463,7 +471,38 @@
           }
         },
         "type": "Advanced",
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
+      },
+      {
+        "name": "0f1503606b9049d5ee51",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "Severity"
+              }
+            },
+            "Property": "State"
+          }
+        },
+        "type": "Categorical",
+        "isHiddenInViewMode": true
+      },
+      {
+        "name": "f25987722910610a46b1",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Number of Tests"
+          }
+        },
+        "type": "Advanced",
+        "isHiddenInViewMode": true
       }
     ]
   }

@@ -174,19 +174,7 @@ cultureInfo en-US
 			          "ConceptualProperty": "IsLatestTestResult"
 			        }
 			      },
-			      "State": "Generated",
-			      "Terms": [
-			        {
-			          "Is Latest": {
-			            "State": "Suggested",
-			            "Source": {
-			              "Type": "External",
-			              "Agent": "PowerBI.VisualColumnRename"
-			            },
-			            "Weight": 0.9
-			          }
-			        }
-			      ]
+			      "State": "Generated"
 			    }
 			  }
 			}

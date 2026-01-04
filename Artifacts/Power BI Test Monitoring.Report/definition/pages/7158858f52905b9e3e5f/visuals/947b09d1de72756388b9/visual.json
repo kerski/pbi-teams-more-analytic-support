@@ -7,7 +7,7 @@
     "z": 32000,
     "height": 51.428571428571431,
     "width": 116.1576354679803,
-    "tabOrder": 29000
+    "tabOrder": 28000
   },
   "visual": {
     "visualType": "cardVisual",
@@ -582,7 +582,7 @@
             "text": {
               "expr": {
                 "Literal": {
-                  "Value": "'Warning'"
+                  "Value": "'Dev - Informational'"
                 }
               }
             },
@@ -740,7 +740,8 @@
             }
           ]
         },
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "6d7231e441d410fe5a10",
@@ -795,7 +796,8 @@
             }
           ]
         },
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "3f8e132f424603c67584",
@@ -812,6 +814,20 @@
         },
         "type": "Advanced",
         "howCreated": "User"
+      },
+      {
+        "name": "68e98d0cc5e14d1ac887",
+        "field": {
+          "Measure": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "_Measures"
+              }
+            },
+            "Property": "Number of Tests"
+          }
+        },
+        "type": "Advanced"
       }
     ],
     "filterSortOrder": "Custom"

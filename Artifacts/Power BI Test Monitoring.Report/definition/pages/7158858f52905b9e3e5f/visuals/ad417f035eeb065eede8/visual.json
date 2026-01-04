@@ -7,7 +7,7 @@
     "z": 14000,
     "height": 86.666666666666671,
     "width": 348.88888888888886,
-    "tabOrder": 6000
+    "tabOrder": 5000
   },
   "visual": {
     "visualType": "barChart",
@@ -555,7 +555,8 @@
             }
           ]
         },
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "c22b4d904a90030e66da",
@@ -591,7 +592,8 @@
           }
         },
         "type": "Advanced",
-        "howCreated": "User"
+        "howCreated": "User",
+        "isHiddenInViewMode": true
       },
       {
         "name": "4e86d208df679576cd20",
@@ -606,7 +608,8 @@
             "Property": "Number of Tests"
           }
         },
-        "type": "Advanced"
+        "type": "Advanced",
+        "isHiddenInViewMode": true
       },
       {
         "name": "83df6ec00574c54038e0",
@@ -621,7 +624,8 @@
             "Property": "Status"
           }
         },
-        "type": "Categorical"
+        "type": "Categorical",
+        "isHiddenInViewMode": true
       }
     ],
     "filterSortOrder": "Custom"

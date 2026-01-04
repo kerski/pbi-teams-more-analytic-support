@@ -7,7 +7,7 @@
     "z": 23000,
     "height": 32.432432432432428,
     "width": 49.2972972972973,
-    "tabOrder": 15000
+    "tabOrder": -9999000
   },
   "visual": {
     "visualType": "image",
@@ -21,6 +21,21 @@
                   "PackageName": "RegisteredResources",
                   "PackageType": 1,
                   "ItemName": "semantic_model_20_item6472354936363616.png"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Test - Semantic Model Image'"
                 }
               }
             }
