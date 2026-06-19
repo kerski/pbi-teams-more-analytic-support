@@ -108,7 +108,8 @@ This solution provides automated quality assurance and analysis for Power BI pro
    | `UPSTREAM_PIPELINE_ID` | Pipeline ID that triggers analysis | `123` |
    | `PQLINT_SUBSCRIPTION_KEY` | PQ Lint API Key (if required) | `your-api-key` |
    | `FABRIC_CICD_DEPLOY_COMMAND` | Optional override command for model deployment with fabric-cicd | `fabric-cicd deploy --source '/path/to/model'` |
-   | `PQL_ASSERT_COMMAND` | Optional override command for running `pql-test` assertions | `pql-test assert --path '/path/to/model' --format json` |
+   | `PQL_AUTH_COMMAND` | Optional override command for `pql-test` authentication | `pql-test auth login --client-id '<client-id>' --client-secret '<client-secret>' --tenant-id '<tenant-id>'` |
+   | `PQL_ASSERT_COMMAND` | Optional override command for running `pql-test` assertions | `pql-test assert --path '/path/to/model' --format json --output '/path/to/output.json' --log-format azuredevops` |
 
 3. **Security Configuration**
    ```
@@ -202,7 +203,8 @@ This solution provides automated quality assurance and analysis for Power BI pro
       ```
       - Triggered by: PBIP-CI pipeline completion
       - Deploys: Semantic models using fabric-cicd before assertion tests
-      - Runs: pql-test assertion suite and captures JSON output
+      - Authenticates once with pql-test service-principal login and runs assertion suite
+      - Captures JSON output using pql-test --output for reliable ingestion
       - Output: Normalized assertion results in Eventhouse
       - Bronze Table: pql_assert_bronze
       - Silver Tables: pql_assert_tests_silver, pql_assert_commits_silver, pql_assert_test_results_silver

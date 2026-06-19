@@ -9,6 +9,7 @@
 # - Variable group 'MYPBITMA-EVENTHOUSE' with required secrets
 # - ADO_TOKEN with repository read permissions for REST API calls
 # - Optional variable FABRIC_CICD_DEPLOY_COMMAND to override deploy command
+# - Optional variable PQL_AUTH_COMMAND to override pql-test authentication command
 # - Optional variable PQL_ASSERT_COMMAND to override pql-test command
 # =============================================================================
 
@@ -231,6 +232,32 @@ jobs:
                     continue
                 }
 
+                # Authenticate pql-test once before assertions (persistent cache)
+                $authCommands = @()
+                if (![string]::IsNullOrWhiteSpace($env:PQL_AUTH_COMMAND)) {
+                    $authCommands += $env:PQL_AUTH_COMMAND
+                }
+                else {
+                    $authCommands += @(
+                        "pql-test auth login --client-id '$clientId' --client-secret '$clientSecret' --tenant-id '$tenantId'",
+                        "pql-test auth login -u '$clientId' -p '$clientSecret' -t '$tenantId'"
+                    )
+                }
+
+                $authSucceeded = $false
+                foreach ($authCommand in $authCommands) {
+                    $authExecution = Invoke-BashCommand -Command $authCommand
+                    if ($authExecution.ExitCode -eq 0) {
+                        $authSucceeded = $true
+                        break
+                    }
+                }
+
+                if (-not $authSucceeded) {
+                    Write-Error "pql-test authentication failed for $($folder.FullName). Configure PQL_AUTH_COMMAND for your environment."
+                    continue
+                }
+
                 # Run pql.assert tests
                 $assertCommands = @()
                 if (![string]::IsNullOrWhiteSpace($env:PQL_ASSERT_COMMAND)) {
@@ -238,9 +265,9 @@ jobs:
                 }
                 else {
                     $assertCommands += @(
-                        "pql-test assert --path '$($folder.FullName)' --format json",
-                        "pql-test --path '$($folder.FullName)' --format json",
-                        "python -m pql_test assert --path '$($folder.FullName)' --format json"
+                        "pql-test assert --path '$($folder.FullName)' --format json --output '$rawResultPath' --log-format azuredevops",
+                        "pql-test assert --path '$($folder.FullName)' --output '$rawResultPath' --log-format azuredevops",
+                        "python -m pql_test assert --path '$($folder.FullName)' --format json --output '$rawResultPath'"
                     )
                 }
 
@@ -313,4 +340,5 @@ jobs:
           CLIENT_SECRET: $(CLIENT_SECRET)
           ADO_TOKEN: $(ADO_TOKEN)
           FABRIC_CICD_DEPLOY_COMMAND: $(FABRIC_CICD_DEPLOY_COMMAND)
+          PQL_AUTH_COMMAND: $(PQL_AUTH_COMMAND)
           PQL_ASSERT_COMMAND: $(PQL_ASSERT_COMMAND)
