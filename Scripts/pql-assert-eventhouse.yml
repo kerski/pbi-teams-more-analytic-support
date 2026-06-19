@@ -1,0 +1,316 @@
+# =============================================================================
+# Pipeline-Triggered: PQL Assert Analysis Pipeline
+# =============================================================================
+# This pipeline is triggered by the PBIP-CI pipeline and runs pql.assert tests
+# after deploying semantic models with fabric-cicd, then ingests normalized
+# assertion results into Eventhouse.
+#
+# Prerequisites:
+# - Variable group 'MYPBITMA-EVENTHOUSE' with required secrets
+# - ADO_TOKEN with repository read permissions for REST API calls
+# - Optional variable FABRIC_CICD_DEPLOY_COMMAND to override deploy command
+# - Optional variable PQL_ASSERT_COMMAND to override pql-test command
+# =============================================================================
+
+trigger: none
+
+variables:
+  - group: MYPBITMA-EVENTHOUSE
+
+resources:
+  pipelines:
+    - pipeline: test-trigger
+      source: PBIP-CI
+      project: PBI-Test
+      trigger:
+        branches:
+          include:
+            - '*'
+
+jobs:
+  - job: TriggeredBuild
+    displayName: 'PQL Assert Analysis'
+    workspace:
+      clean: all
+    pool:
+      vmImage: 'ubuntu-latest'
+
+    steps:
+      - checkout: self
+        displayName: 'Checkout Repository'
+        persistCredentials: true
+        fetchDepth: 0
+
+      - task: DownloadBuildArtifacts@1
+        displayName: 'Download Triggering Build Artifacts'
+        inputs:
+          buildType: 'specific'
+          project: 'PBI-Test'
+          pipeline: '$(resources.pipeline.test-trigger.pipelineName)'
+          buildVersionToDownload: 'specific'
+          buildId: '$(resources.pipeline.test-trigger.runID)'
+          artifactName: 'CombinedModels'
+          downloadPath: '$(System.ArtifactsDirectory)'
+
+      - script: |
+          echo "Triggered by pipeline: $(resources.pipeline.test-trigger.pipelineName)"
+          echo "Triggered run ID:      $(resources.pipeline.test-trigger.runID)"
+          echo "Triggered pipeline ID: $(resources.pipeline.test-trigger.pipelineID)"
+          echo "Source branch (full):  $(resources.pipeline.test-trigger.sourceBranch)"
+          echo "Artifacts directory:   $(System.ArtifactsDirectory)"
+        displayName: 'Debug Triggering Pipeline Variables'
+
+      - script: |
+          set -euo pipefail
+          python -m pip install --upgrade pip
+          pip install -i https://test.pypi.org/simple/ pql-test
+          pip install fabric-cicd
+        displayName: 'Install pql-test and fabric-cicd'
+
+      - task: PowerShell@2
+        displayName: 'Deploy models, run pql.assert, and ingest results'
+        inputs:
+          targetType: 'inline'
+          pwsh: true
+          script: |
+            $ErrorActionPreference = 'Stop'
+
+            $clientId = "${env:CLIENT_ID}"
+            $clientSecret = "${env:CLIENT_SECRET}"
+            $tenantId = "${env:TENANT_ID}"
+            $clusterUrl = "${env:CLUSTER_URL}"
+            $database = "${env:DATABASE}"
+            $assertTable = "pql_assert_bronze"
+
+            Import-Module -Name "./Scripts/Custom/Invoke-FabricJsonIngestion.psm1" -Force
+
+            function Invoke-BashCommand {
+                param(
+                    [Parameter(Mandatory)] [string]$Command
+                )
+
+                Write-Host "##[debug]Executing: $Command"
+                $output = & bash -lc $Command 2>&1
+                $exitCode = $LASTEXITCODE
+
+                return @{
+                    ExitCode = $exitCode
+                    Output = (($output | ForEach-Object { "$_" }) -join "`n")
+                }
+            }
+
+            function Normalize-PqlAssertResult {
+                param(
+                    [Parameter(Mandatory)] [object]$InputResult,
+                    [Parameter(Mandatory)] [string]$RepositoryId,
+                    [Parameter(Mandatory)] [string]$BranchName,
+                    [Parameter(Mandatory)] [string]$CommitId,
+                    [Parameter(Mandatory)] [string]$CommittedBy,
+                    [Parameter(Mandatory)] [string]$LogicalId,
+                    [Parameter(Mandatory)] [string]$SemanticModelName,
+                    [Parameter(Mandatory)] [string]$Timestamp,
+                    [Parameter(Mandatory)] [string]$DeploymentStatus,
+                    [Parameter(Mandatory)] [string]$DeploymentDetails
+                )
+
+                $resultId = if ($null -ne $InputResult.ID) { "$($InputResult.ID)" } elseif ($null -ne $InputResult.Id) { "$($InputResult.Id)" } elseif ($null -ne $InputResult.RuleId) { "$($InputResult.RuleId)" } else { [System.Guid]::NewGuid().ToString() }
+                $name = if ($null -ne $InputResult.Name) { "$($InputResult.Name)" } elseif ($null -ne $InputResult.TestName) { "$($InputResult.TestName)" } elseif ($null -ne $InputResult.RuleName) { "$($InputResult.RuleName)" } else { "Unnamed assertion" }
+                $description = if ($null -ne $InputResult.Description) { "$($InputResult.Description)" } elseif ($null -ne $InputResult.Message) { "$($InputResult.Message)" } else { "" }
+
+                $severityRaw = if ($null -ne $InputResult.Severity) { "$($InputResult.Severity)" } elseif ($null -ne $InputResult.Level) { "$($InputResult.Level)" } else { "1" }
+
+                $passedValue = $false
+                if ($null -ne $InputResult.Passed) {
+                    $passedValue = "$($InputResult.Passed)" -match '^(?i:true|1|pass|passed|success)$'
+                } elseif ($null -ne $InputResult.Status) {
+                    $passedValue = "$($InputResult.Status)" -match '^(?i:pass|passed|success|ok)$'
+                } elseif ($null -ne $InputResult.Outcome) {
+                    $passedValue = "$($InputResult.Outcome)" -match '^(?i:pass|passed|success|ok)$'
+                }
+
+                $details = if ($null -ne $InputResult.Details) { "$($InputResult.Details)" } elseif ($null -ne $InputResult.Error) { "$($InputResult.Error)" } else { "" }
+
+                return [PSCustomObject]@{
+                    ID = $resultId
+                    Name = $name
+                    Description = $description
+                    Severity = $severityRaw
+                    Passed = $passedValue
+                    Details = $details
+                    RepositoryId = $RepositoryId
+                    BranchName = $BranchName
+                    CommitId = $CommitId
+                    CommittedBy = $CommittedBy
+                    LogicalId = $LogicalId
+                    SemanticModelName = $SemanticModelName
+                    Timestamp = $Timestamp
+                    DeploymentStatus = $DeploymentStatus
+                    DeploymentDetails = $DeploymentDetails
+                }
+            }
+
+            $combinedModelsPath = "$(Pipeline.Workspace)/a/CombinedModels"
+            Write-Host "##[debug]Combined Models Path: $combinedModelsPath"
+            $semanticModelFolders = Get-ChildItem -Path $combinedModelsPath -Directory -Recurse | Where-Object { $_.Name -like "*.SemanticModel" }
+
+            if ($semanticModelFolders.Count -eq 0) {
+                Write-Warning "No semantic models found in downloaded artifact."
+            }
+
+            foreach ($folder in $semanticModelFolders) {
+                Write-Host "##[debug]Processing semantic model folder: $($folder.FullName)"
+
+                $tempSplit = ($folder.FullName -split "~")
+                if ($tempSplit.Length -lt 4) {
+                    Write-Warning "Skipping folder with invalid path format: $($folder.FullName)"
+                    continue
+                }
+
+                $workspaceName = $tempSplit[$tempSplit.Length - 4]
+                $repositoryId = $tempSplit[$tempSplit.Length - 3]
+                $branchName = $tempSplit[$tempSplit.Length - 2]
+                $commitId = ($tempSplit[$tempSplit.Length - 1] -split "/")[0]
+                $currentTime = [DateTime]::UtcNow.ToString('yyyyMMdd_HHmmss')
+
+                $org = "$(System.TeamFoundationCollectionUri)"
+                $token = $env:ADO_TOKEN
+                $currentProject = "$(System.TeamProject)"
+                $apiUrl = "$($org)$($currentProject)/_apis/git/repositories/$($repositoryId)/commits/$($commitId)?api-version=7.2-preview.1"
+                $commitHeaders = @{ Authorization = ('Bearer ' + $token) }
+                $commitInfo = Invoke-RestMethod -Uri $apiUrl -Headers $commitHeaders
+                $committerEmail = "$($commitInfo.author.email)"
+
+                $platformFile = "$($folder.FullName)/.platform"
+                if (!(Test-Path -LiteralPath $platformFile)) {
+                    Write-Warning "Skipping folder (missing .platform): $($folder.FullName)"
+                    continue
+                }
+
+                try {
+                    $platformContent = Get-Content -LiteralPath $platformFile -Encoding utf8 | ConvertFrom-Json
+                    $semanticModelName = $platformContent.metadata.displayName
+                    $logicalId = $platformContent.config.logicalId
+                }
+                catch {
+                    Write-Warning "Skipping folder with invalid .platform file: $($folder.FullName)"
+                    continue
+                }
+
+                $outputDirectory = "./PQLAssertTests/$($repositoryId)/$($branchName)/$($logicalId)~$($commitId)~$($currentTime)"
+                New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
+
+                $rawResultPath = "$outputDirectory/pql-assert-raw.json"
+                $normalizedResultPath = "$outputDirectory/pql-assert-normalized.json"
+
+                # Deploy model with fabric-cicd
+                $deployCommands = @()
+                if (![string]::IsNullOrWhiteSpace($env:FABRIC_CICD_DEPLOY_COMMAND)) {
+                    $deployCommands += $env:FABRIC_CICD_DEPLOY_COMMAND
+                }
+                else {
+                    $deployCommands += @(
+                        "fabric-cicd deploy --source '$($folder.FullName)'",
+                        "python -m fabric_cicd deploy --source '$($folder.FullName)'",
+                        "fab deploy"
+                    )
+                }
+
+                $deploymentStatus = "Failed"
+                $deploymentDetails = ""
+                foreach ($deployCommand in $deployCommands) {
+                    $deployExecution = Invoke-BashCommand -Command $deployCommand
+                    $deploymentDetails = $deployExecution.Output
+                    if ($deployExecution.ExitCode -eq 0) {
+                        $deploymentStatus = "Succeeded"
+                        break
+                    }
+                }
+
+                if ($deploymentStatus -ne "Succeeded") {
+                    Write-Error "fabric-cicd deployment failed for $($folder.FullName). Configure FABRIC_CICD_DEPLOY_COMMAND for your environment."
+                    continue
+                }
+
+                # Run pql.assert tests
+                $assertCommands = @()
+                if (![string]::IsNullOrWhiteSpace($env:PQL_ASSERT_COMMAND)) {
+                    $assertCommands += $env:PQL_ASSERT_COMMAND
+                }
+                else {
+                    $assertCommands += @(
+                        "pql-test assert --path '$($folder.FullName)' --format json",
+                        "pql-test --path '$($folder.FullName)' --format json",
+                        "python -m pql_test assert --path '$($folder.FullName)' --format json"
+                    )
+                }
+
+                $assertSucceeded = $false
+                $assertOutput = ""
+                foreach ($assertCommand in $assertCommands) {
+                    $assertExecution = Invoke-BashCommand -Command $assertCommand
+                    $assertOutput = $assertExecution.Output
+                    if ($assertExecution.ExitCode -eq 0) {
+                        $assertSucceeded = $true
+                        break
+                    }
+                }
+
+                if (-not $assertSucceeded) {
+                    Write-Error "pql-test assertion execution failed for $($folder.FullName). Configure PQL_ASSERT_COMMAND for your environment."
+                    continue
+                }
+
+                if (Test-Path -LiteralPath $rawResultPath) {
+                    Write-Host "##[debug]Using existing pql.assert output at $rawResultPath"
+                }
+                else {
+                    $assertOutput | Set-Content -LiteralPath $rawResultPath -Encoding utf8
+                }
+
+                $rawObject = $null
+                try {
+                    $rawObject = Get-Content -LiteralPath $rawResultPath -Raw -Encoding utf8 | ConvertFrom-Json -Depth 100
+                }
+                catch {
+                    Write-Error "pql.assert output is not valid JSON for $($folder.FullName): $($_.Exception.Message)"
+                    continue
+                }
+
+                $resultItems = @()
+                if ($rawObject -is [array]) {
+                    $resultItems = $rawObject
+                }
+                elseif ($null -ne $rawObject.results) {
+                    if ($rawObject.results -is [array]) { $resultItems = $rawObject.results } else { $resultItems = @($rawObject.results) }
+                }
+                else {
+                    $resultItems = @($rawObject)
+                }
+
+                $normalizedResults = @()
+                foreach ($resultItem in $resultItems) {
+                    $normalizedResults += Normalize-PqlAssertResult -InputResult $resultItem -RepositoryId $repositoryId -BranchName $branchName -CommitId $commitId -CommittedBy $committerEmail -LogicalId $logicalId -SemanticModelName $semanticModelName -Timestamp $currentTime -DeploymentStatus $deploymentStatus -DeploymentDetails $deploymentDetails
+                }
+
+                $normalizedResults | ConvertTo-Json -Depth 20 | Set-Content -LiteralPath $normalizedResultPath -Encoding utf8
+
+                $tableCreated = Invoke-FabricTableCreation -ClusterUrl $clusterUrl -Database $database -TableName $assertTable -JsonFilePath $normalizedResultPath -TenantId $tenantId -ClientId $clientId -ClientSecret $clientSecret
+                if (-not $tableCreated) {
+                    Write-Error "Failed to create or verify pql.assert Eventhouse table."
+                    continue
+                }
+
+                try {
+                    $ingestCount = Invoke-KustoJsonIngest -ClusterUrl $clusterUrl -Database $database -TableName $assertTable -JsonFilePath $normalizedResultPath -ClientId $clientId -ClientSecret $clientSecret -TenantId $tenantId
+                    Write-Host "##[debug]Ingested $ingestCount records for semantic model '$semanticModelName'"
+                }
+                catch {
+                    Write-Error "Failed to ingest pql.assert results for semantic model '$semanticModelName': $($_.Exception.Message)"
+                    continue
+                }
+            }
+        env:
+          CLIENT_SECRET: $(CLIENT_SECRET)
+          ADO_TOKEN: $(ADO_TOKEN)
+          FABRIC_CICD_DEPLOY_COMMAND: $(FABRIC_CICD_DEPLOY_COMMAND)
+          PQL_ASSERT_COMMAND: $(PQL_ASSERT_COMMAND)

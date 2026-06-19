@@ -38,6 +38,8 @@ This solution provides automated quality assurance and analysis for Power BI pro
 - PBIR Inspector CLI
 - Tabular Editor 2
 - PQ Lint API access
+- `pql-test` (from TestPyPI)
+- `fabric-cicd`
 
 ## Setup Instructions
 
@@ -105,6 +107,8 @@ This solution provides automated quality assurance and analysis for Power BI pro
    | `DATABASE` | Eventhouse Database Name | `pbi_analytics` |
    | `UPSTREAM_PIPELINE_ID` | Pipeline ID that triggers analysis | `123` |
    | `PQLINT_SUBSCRIPTION_KEY` | PQ Lint API Key (if required) | `your-api-key` |
+   | `FABRIC_CICD_DEPLOY_COMMAND` | Optional override command for model deployment with fabric-cicd | `fabric-cicd deploy --source '/path/to/model'` |
+   | `PQL_ASSERT_COMMAND` | Optional override command for running `pql-test` assertions | `pql-test assert --path '/path/to/model' --format json` |
 
 3. **Security Configuration**
    ```
@@ -185,6 +189,33 @@ This solution provides automated quality assurance and analysis for Power BI pro
    - Output: Pass/Fail status for branch protection
    ```
 
+   #### Pipeline 5: `pql.assert` Deployment + Assertion Analysis (Eventhouse)
+
+   1. **Create Pipeline**
+      ```
+      1. Follow same process as Pipeline 1
+      2. Select "Scripts/pql-assert-eventhouse.yml"
+      3. Name: "pql.assert"
+      ```
+
+   2. **Configuration**
+      ```
+      - Triggered by: PBIP-CI pipeline completion
+      - Deploys: Semantic models using fabric-cicd before assertion tests
+      - Runs: pql-test assertion suite and captures JSON output
+      - Output: Normalized assertion results in Eventhouse
+      - Bronze Table: pql_assert_bronze
+      - Silver Tables: pql_assert_tests_silver, pql_assert_commits_silver, pql_assert_test_results_silver
+      - Combined Model: Included in tests_silver_combined, commits_silver_combined, test_results_silver_combined
+      - Data Contract: ID, Name, Description, Severity, Passed, Details, RepositoryId, BranchName, CommitId, CommittedBy, LogicalId, SemanticModelName, Timestamp, DeploymentStatus, DeploymentDetails
+      ```
+
+   3. **Quality Gate Behavior**
+      ```
+      - pql.assert is monitor-only by default in this repository configuration.
+      - The existing "Quality Gate - Check Analysis Results" pipeline is unchanged.
+      ```
+
 ### Step 5: Configure Branch Policies
 
 #### Create Protected Branches
@@ -249,6 +280,7 @@ This solution provides automated quality assurance and analysis for Power BI pro
    - PBIR Inspector analyzes report structure and compliance
    - Tabular Editor runs best practice analysis on semantic models
    - PQ Lint analyzes Power Query code quality
+   - pql.assert deploys semantic models with fabric-cicd and runs assertion tests
 
 4. **Results Storage and Monitoring**
    - All results stored in Eventhouse tables

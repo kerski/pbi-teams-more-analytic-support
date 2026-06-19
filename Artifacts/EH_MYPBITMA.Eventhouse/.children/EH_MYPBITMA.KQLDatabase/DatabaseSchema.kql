@@ -5,17 +5,21 @@
 .create-merge table pbir_inspector_bronze (Id:string, TestedFilePath:string, RulesFilePath:string, CompletionTime:string, Verbose:bool, Results:dynamic, RepositoryId:string, BranchName:string, LogicalId:string, CommitId:string, CommittedBy:string, Timestamp:string, ReportName:string) 
 .create-merge table tabular_editor_bronze (RepositoryId:string, BranchName:string, Timestamp:string, CommitId:string, CommittedBy:string, LogicalId:string, Results:string, SemanticModelName:string, TmdlFileName:string) 
 .create-merge table pq_lint_bronze (RepositoryId:string, BranchName:string, Timestamp:string, CommitId:string, CommittedBy:string, LogicalId:string, Results:dynamic, SemanticModelName:string, TmdlFileName:string) 
+.create-merge table pql_assert_bronze (ID:string, Name:string, Description:string, Severity:string, Passed:bool, Details:string, RepositoryId:string, BranchName:string, CommitId:string, CommittedBy:string, LogicalId:string, SemanticModelName:string, Timestamp:string, DeploymentStatus:string, DeploymentDetails:string) 
 .create-merge table pq_lint_tests_silver (Id:long, BusinessKey:string, Name:string, Description:string, Source:string) 
 .create-merge table pbir_inspector_tests_silver (Id:long, BusinessKey:string, Name:string, Description:string, Source:string) 
 .create-merge table tabular_editor_tests_silver (Id:long, BusinessKey:string, Name:string, Description:string, Source:string) 
+.create-merge table pql_assert_tests_silver (Id:long, BusinessKey:string, Name:string, Description:string, Source:string) 
 .create-merge table tests_silver_combined (Id:long, BusinessKey:string, Name:string, Description:string, Source:string) 
 .create-merge table tabular_editor_commits_silver (RepositoryId:string, CommitId:string, CommittedBy:string, BranchName:string, LogicalId:string, ArtifactName:string, Type:string, Date:datetime) 
 .create-merge table pbir_inspector_commits_silver (RepositoryId:string, CommitId:string, CommittedBy:string, BranchName:string, LogicalId:string, ArtifactName:string, Type:string, Date:datetime) 
 .create-merge table pq_lint_commits_silver (RepositoryId:string, CommitId:string, CommittedBy:string, BranchName:string, LogicalId:string, ArtifactName:string, Type:string, Date:datetime) 
+.create-merge table pql_assert_commits_silver (RepositoryId:string, CommitId:string, CommittedBy:string, BranchName:string, LogicalId:string, ArtifactName:string, Type:string, Date:datetime) 
 .create-merge table commits_silver_combined (Id:long, RepositoryId:string, CommitId:string, CommittedBy:string, BranchName:string, LogicalId:string, ArtifactName:string, Type:string, Date:datetime) 
 .create-merge table pbir_inspector_test_results_silver (Id:long, CommitsId:long, TestsId:long, SeverityId:int, Actual:string, Expected:string, Details:string, Passed:int, Date:datetime, Time:timespan) 
 .create-merge table tabular_editor_test_results_silver (Id:long, CommitsId:long, TestsId:long, SeverityId:int, Actual:string, Expected:string, Details:string, Passed:int, Date:datetime, Time:timespan) 
 .create-merge table pq_lint_test_results_silver (Id:long, CommitsId:long, TestsId:long, SeverityId:int, Actual:string, Expected:string, Details:string, Passed:int, Date:datetime, Time:timespan) 
+.create-merge table pql_assert_test_results_silver (Id:long, CommitsId:long, TestsId:long, SeverityId:int, Actual:string, Expected:string, Details:string, Passed:int, Date:datetime, Time:timespan) 
 .create-merge table test_results_silver_combined (Id:long, CommitsId:long, TestsId:long, SeverityId:int, Actual:string, Expected:string, Details:string, Passed:int, Date:datetime, Time:timespan) 
 .create-or-alter function with (folder = "Bronze to Silver", docstring = "Add PQLint Tests", skipvalidation = "true") fnParsePQLintTest() {
     pq_lint_bronze
@@ -38,6 +42,23 @@
         Id = hash(BusinessKey),
         BusinessKey,
         Name,
+        Description,
+        Source
+}
+.create-or-alter function with (folder = "Bronze to Silver", docstring = "Add PQL Assert Tests", skipvalidation = "true") fnParsePQLAssertTest() {
+    pql_assert_bronze
+    | project
+        ID = tostring(ID),
+        Name = tostring(Name),
+        Description = tostring(Description)
+    | where isnotempty(ID) or isnotempty(Name)
+    | extend
+        BusinessKey = strcat('PQLASSERT_',iff(isnotempty(ID), ID, Name)),
+        Source = 'PQL Assert'
+    | project
+        Id = hash(BusinessKey),
+        BusinessKey,
+        Name = iff(isnotempty(Name), Name, 'Unnamed assertion'),
         Description,
         Source
 }
@@ -65,6 +86,16 @@
         Name,
         Description,
         Source = "PQ Lint"
+    | distinct Id, BusinessKey, Name, Description, Source
+}
+.create-or-alter function with (folder = "Combined", skipvalidation = "true") fnPQLAssertToCombined() {
+    pql_assert_tests_silver
+    | project
+        Id,
+        BusinessKey,
+        Name,
+        Description,
+        Source = "PQL Assert"
     | distinct Id, BusinessKey, Name, Description, Source
 }
 .create-or-alter function with (folder = "Combined", skipvalidation = "true") fnPBIRInspectorToCombined() {
@@ -135,6 +166,35 @@
         Type,
         Date = todatetime(strcat(TSYear,'-',TSMonth,'-',TSDay,' 00:00:00Z'))
 }
+.create-or-alter function with (folder = "Bronze to Silver", docstring = "Add Commit from PQL Assert", skipvalidation = "true") fnParsePQLAssertCommit() {
+    pql_assert_bronze
+    | project
+        RepositoryId,
+        CommitId,
+        CommittedBy,
+        BranchName,
+        SemanticModelName,
+        LogicalId,
+        Timestamp
+    | extend
+        ArtifactName = SemanticModelName,
+        Type = 'Semantic Model',
+        TSYear = toint(substring(Timestamp, 0, 4)),
+        TSMonth = toint(substring(Timestamp, 4, 2)),
+        TSDay = toint(substring(Timestamp, 6, 2)),
+        TSHour = toint(substring(Timestamp, 9, 2)),
+        TSMinute = toint(substring(Timestamp, 11, 2)),
+        TSSecond = toint(substring(Timestamp, 13, 2))
+    | project
+        RepositoryId,
+        CommitId,
+        CommittedBy,
+        BranchName,
+        LogicalId,
+        ArtifactName,
+        Type,
+        Date = todatetime(strcat(TSYear,'-',TSMonth,'-',TSDay,' 00:00:00Z'))
+}
 .create-or-alter function with (folder = "Combined Commits", skipvalidation = "true") fnPQLintCommitsToCombined() {
     pq_lint_commits_silver
     | project 
@@ -148,6 +208,20 @@
         Type,
         Date
     | distinct Id, RepositoryId, CommitId,  CommittedBy, BranchName, LogicalId, ArtifactName, Type, Date
+}
+.create-or-alter function with (folder = "Combined Commits", skipvalidation = "true") fnPQLAssertCommitsToCombined() {
+    pql_assert_commits_silver
+    | project
+        Id = hash(strcat(RepositoryId,CommitId,BranchName,LogicalId,ArtifactName,Type)),
+        RepositoryId,
+        CommitId,
+        CommittedBy,
+        BranchName,
+        LogicalId,
+        ArtifactName,
+        Type,
+        Date
+    | distinct Id, RepositoryId, CommitId, CommittedBy, BranchName, LogicalId, ArtifactName, Type, Date
 }
 .create-or-alter function with (folder = "Combined Commits", skipvalidation = "true") fnPBIRInspectorCommitsToCombined() {
     pbir_inspector_commits_silver
@@ -238,8 +312,70 @@ pbir_inspector_bronze
     Date,
     Time
 }
+.create-or-alter function with (folder = "Bronze to Silver", docstring = "Add Test Results from PQL Assert", skipvalidation = "true") fnParsePQLAssertTestResults() {
+    pql_assert_bronze
+    | project
+        RepositoryId,
+        CommitId,
+        BranchName,
+        LogicalId,
+        SemanticModelName,
+        Timestamp,
+        ID = tostring(ID),
+        Name = tostring(Name),
+        SeverityRaw = tostring(Severity),
+        PassedRaw = tostring(Passed),
+        Details = tostring(Details),
+        Description = tostring(Description)
+    | extend
+        NumericSeverity = toint(SeverityRaw),
+        SeverityId = toint(case(
+            isnotnull(NumericSeverity) and NumericSeverity > 0, NumericSeverity,
+            SeverityRaw =~ 'critical', 3,
+            SeverityRaw =~ 'high', 3,
+            SeverityRaw =~ 'error', 3,
+            SeverityRaw =~ 'medium', 2,
+            SeverityRaw =~ 'warning', 2,
+            SeverityRaw =~ 'low', 1,
+            1
+        )),
+        Passed = toint(case(
+            PassedRaw =~ 'true', 1,
+            PassedRaw == '1', 1,
+            PassedRaw =~ 'pass', 1,
+            PassedRaw =~ 'passed', 1,
+            PassedRaw =~ 'success', 1,
+            0
+        )),
+        CommitsId = hash(strcat(RepositoryId, CommitId, BranchName, LogicalId, SemanticModelName, 'Semantic Model')),
+        TestsId = hash(strcat('PQLASSERT_',iff(isnotempty(ID), ID, Name))),
+        TSYear = toint(substring(Timestamp, 0, 4)),
+        TSMonth = toint(substring(Timestamp, 4, 2)),
+        TSDay = toint(substring(Timestamp, 6, 2)),
+        TSHour = toint(substring(Timestamp, 9, 2)),
+        TSMinute = toint(substring(Timestamp, 11, 2)),
+        TSSecond = toint(substring(Timestamp, 13, 2))
+    | extend
+        Date = todatetime(strcat(TSYear,'-',TSMonth,'-',TSDay,' 00:00:00Z')),
+        Time = totimespan(strcat(TSHour, ':', TSMinute, ':', TSSecond))
+    | project
+        Id = hash(strcat(CommitsId, TestsId, tostring(Date), tostring(Time), iff(isnotempty(ID), ID, Name))),
+        CommitsId,
+        TestsId,
+        SeverityId,
+        Actual = iff(Passed == 1, 'Pass', 'Fail'),
+        Expected = 'Pass',
+        Details = iff(isnotempty(Details), Details, Description),
+        Passed,
+        Date,
+        Time
+}
 .create-or-alter function with (folder = "Combined Test Results", skipvalidation = "true") fnPQLintTestResultsToCombined() {
     pq_lint_test_results_silver
+    | distinct Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, Date, Time
+}
+.create-or-alter function with (folder = "Combined Test Results", skipvalidation = "true") fnPQLAssertTestResultsToCombined() {
+    pql_assert_test_results_silver
     | distinct Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, Date, Time
 }
 .create-or-alter function with (folder = "Combined Test Results", skipvalidation = "true") fnPBIRInspectorTestResultsToCombined() {
@@ -452,14 +588,17 @@ pbir_inspector_bronze
 .create-or-alter materialized-view  TestResults on table test_results_silver_combined { test_results_silver_combined
     | summarize take_any(*) by Id, CommitsId, TestsId, SeverityId, Actual, Expected, Details, Passed, Date, Time }
 .alter table pq_lint_tests_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_bronze\",\"Query\":\"fnParsePQLintTest\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table pql_assert_tests_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pql_assert_bronze\",\"Query\":\"fnParsePQLAssertTest\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
 .alter table pbir_inspector_tests_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pbir_inspector_bronze\",\"Query\":\"fnParsePBIRInspectorTest\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
 .alter table tabular_editor_tests_silver policy update "[{\"IsEnabled\":true,\"Source\":\"tabular_editor_bronze\",\"Query\":\"fnParseTabularEditorTest\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
-.alter table tests_silver_combined policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_tests_silver\",\"Query\":\"fnPQLintToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"pbir_inspector_tests_silver\",\"Query\":\"fnPBIRInspectorToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"tabular_editor_tests_silver\",\"Query\":\"fnTabularEditorToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table tests_silver_combined policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_tests_silver\",\"Query\":\"fnPQLintToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"pql_assert_tests_silver\",\"Query\":\"fnPQLAssertToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"pbir_inspector_tests_silver\",\"Query\":\"fnPBIRInspectorToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"tabular_editor_tests_silver\",\"Query\":\"fnTabularEditorToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
 .alter table tabular_editor_commits_silver policy update "[{\"IsEnabled\":true,\"Source\":\"tabular_editor_bronze\",\"Query\":\"fnParseTabularEditorCommit()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
 .alter table pbir_inspector_commits_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pbir_inspector_bronze\",\"Query\":\"fnParsePBIRInspectorCommit()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
 .alter table pq_lint_commits_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_bronze\",\"Query\":\"fnParsePQLintCommit()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
-.alter table commits_silver_combined policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_commits_silver\",\"Query\":\"fnPQLintCommitsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"pbir_inspector_commits_silver\",\"Query\":\"fnPBIRInspectorCommitsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"tabular_editor_commits_silver\",\"Query\":\"fnTabularEditorCommitsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table pql_assert_commits_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pql_assert_bronze\",\"Query\":\"fnParsePQLAssertCommit()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table commits_silver_combined policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_commits_silver\",\"Query\":\"fnPQLintCommitsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"pql_assert_commits_silver\",\"Query\":\"fnPQLAssertCommitsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"pbir_inspector_commits_silver\",\"Query\":\"fnPBIRInspectorCommitsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"tabular_editor_commits_silver\",\"Query\":\"fnTabularEditorCommitsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
 .alter table pbir_inspector_test_results_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pbir_inspector_bronze\",\"Query\":\"fnParsePBIRInspectorTestResults()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
 .alter table tabular_editor_test_results_silver policy update "[{\"IsEnabled\":true,\"Source\":\"tabular_editor_bronze\",\"Query\":\"fnParseTabularEditorTestResults()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
 .alter table pq_lint_test_results_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_bronze\",\"Query\":\"fnParsePQLintTestResults()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
-.alter table test_results_silver_combined policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_test_results_silver\",\"Query\":\"fnPQLintTestResultsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"pbir_inspector_test_results_silver\",\"Query\":\"fnPBIRInspectorTestResultsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"tabular_editor_test_results_silver\",\"Query\":\"fnTabularEditorTestResultsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table pql_assert_test_results_silver policy update "[{\"IsEnabled\":true,\"Source\":\"pql_assert_bronze\",\"Query\":\"fnParsePQLAssertTestResults()\",\"IsTransactional\":true,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
+.alter table test_results_silver_combined policy update "[{\"IsEnabled\":true,\"Source\":\"pq_lint_test_results_silver\",\"Query\":\"fnPQLintTestResultsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"pql_assert_test_results_silver\",\"Query\":\"fnPQLAssertTestResultsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"pbir_inspector_test_results_silver\",\"Query\":\"fnPBIRInspectorTestResultsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null},{\"IsEnabled\":true,\"Source\":\"tabular_editor_test_results_silver\",\"Query\":\"fnTabularEditorTestResultsToCombined()\",\"IsTransactional\":false,\"PropagateIngestionProperties\":false,\"ManagedIdentity\":null}]"
