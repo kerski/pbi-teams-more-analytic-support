@@ -107,7 +107,8 @@ This solution provides automated quality assurance and analysis for Power BI pro
    | `DATABASE` | Eventhouse Database Name | `pbi_analytics` |
    | `UPSTREAM_PIPELINE_ID` | Pipeline ID that triggers analysis | `123` |
    | `PQLINT_SUBSCRIPTION_KEY` | PQ Lint API Key (if required) | `your-api-key` |
-   | `FABRIC_CICD_DEPLOY_COMMAND` | Optional override command for model deployment with fabric-cicd | `fabric-cicd deploy --source '/path/to/model'` |
+   | `FABRIC_CICD_DEPLOY_COMMAND` | Optional override command for model deployment with fabric-cicd | `python ./Scripts/Custom/Invoke-FabricCicdDeploy.py --workspace-name '<workspace>' --source-path '/path/to/model' --items-in-scope '["SemanticModel"]'` |
+   | `FABRIC_CICD_ITEMS_IN_SCOPE` | Optional override JSON array for fabric-cicd deployment scope | `["SemanticModel"]` |
    | `PQL_AUTH_COMMAND` | Optional override command for `pql-test` authentication | `pql-test auth login --client-id '<client-id>' --client-secret '<client-secret>' --tenant-id '<tenant-id>'` |
    | `PQL_ASSERT_COMMAND` | Optional override command for running `pql-test` assertions | `pql-test assert --path '/path/to/model' --format json --output '/path/to/output.json' --log-format azuredevops` |
 
@@ -202,7 +203,8 @@ This solution provides automated quality assurance and analysis for Power BI pro
    2. **Configuration**
       ```
       - Triggered by: PBIP-CI pipeline completion
-      - Deploys: Semantic models using fabric-cicd before assertion tests
+      - Deploys: Semantic models using a Python fabric-cicd workflow before assertion tests
+      - Default deployment scope is `["SemanticModel"]` and does not unpublish orphan items
       - Authenticates once with pql-test service-principal login and runs assertion suite
       - Captures JSON output using pql-test --output for reliable ingestion
       - Output: Normalized assertion results in Eventhouse

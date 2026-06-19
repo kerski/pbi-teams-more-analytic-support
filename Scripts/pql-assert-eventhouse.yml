@@ -9,6 +9,7 @@
 # - Variable group 'MYPBITMA-EVENTHOUSE' with required secrets
 # - ADO_TOKEN with repository read permissions for REST API calls
 # - Optional variable FABRIC_CICD_DEPLOY_COMMAND to override deploy command
+# - Optional variable FABRIC_CICD_ITEMS_IN_SCOPE to override deployed item types
 # - Optional variable PQL_AUTH_COMMAND to override pql-test authentication command
 # - Optional variable PQL_ASSERT_COMMAND to override pql-test command
 # =============================================================================
@@ -203,16 +204,15 @@ jobs:
                 $rawResultPath = "$outputDirectory/pql-assert-raw.json"
                 $normalizedResultPath = "$outputDirectory/pql-assert-normalized.json"
 
-                # Deploy model with fabric-cicd
+                # Deploy model with fabric-cicd (Python library) using publish-only behavior
                 $deployCommands = @()
                 if (![string]::IsNullOrWhiteSpace($env:FABRIC_CICD_DEPLOY_COMMAND)) {
                     $deployCommands += $env:FABRIC_CICD_DEPLOY_COMMAND
                 }
                 else {
+                    $itemsInScope = if (![string]::IsNullOrWhiteSpace($env:FABRIC_CICD_ITEMS_IN_SCOPE)) { $env:FABRIC_CICD_ITEMS_IN_SCOPE } else { '["SemanticModel"]' }
                     $deployCommands += @(
-                        "fabric-cicd deploy --source '$($folder.FullName)'",
-                        "python -m fabric_cicd deploy --source '$($folder.FullName)'",
-                        "fab deploy"
+                        "python ./Scripts/Custom/Invoke-FabricCicdDeploy.py --workspace-name '$workspaceName' --source-path '$($folder.FullName)' --items-in-scope '$itemsInScope' --environment '$branchName'"
                     )
                 }
 
@@ -340,5 +340,6 @@ jobs:
           CLIENT_SECRET: $(CLIENT_SECRET)
           ADO_TOKEN: $(ADO_TOKEN)
           FABRIC_CICD_DEPLOY_COMMAND: $(FABRIC_CICD_DEPLOY_COMMAND)
+          FABRIC_CICD_ITEMS_IN_SCOPE: $(FABRIC_CICD_ITEMS_IN_SCOPE)
           PQL_AUTH_COMMAND: $(PQL_AUTH_COMMAND)
           PQL_ASSERT_COMMAND: $(PQL_ASSERT_COMMAND)
